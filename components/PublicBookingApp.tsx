@@ -333,20 +333,6 @@ export function PublicBookingApp() {
             <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} className="mt-1 w-full rounded-[8px] border border-line bg-paper px-3 py-2 text-sm font-semibold normal-case tracking-normal outline-none focus:border-[#0057ff]" />
           </label>
 
-          <div className="mt-3 rounded-[8px] border border-line bg-paper p-3 text-sm font-semibold text-ink/70">
-            <div className="flex items-center gap-2">
-              <Clock3 className="text-[#0057ff]" size={18} />
-              <p>
-                {selectedSlot
-                  ? `Cita con ${selectedSlot.hairdresser_name} a las ${selectedSlot.time}`
-                  : "Elige una hora verde."}
-              </p>
-            </div>
-          </div>
-
-          <button disabled={!selectedSlot || loading} className="mt-4 h-12 w-full rounded-[8px] bg-[#0057ff] px-4 font-black text-white disabled:opacity-45">
-            {loading ? "Confirmando..." : "Confirmar reserva"}
-          </button>
         </section>
 
         <section className="rounded-[8px] border border-line bg-white p-3 shadow-sm">
@@ -401,6 +387,21 @@ export function PublicBookingApp() {
                 </div>
               );
             })}
+          </div>
+
+          <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(142px,220px)] items-stretch gap-2">
+            <div className="flex h-12 min-w-0 items-center gap-2 rounded-[8px] border border-line bg-paper px-3 text-sm font-semibold text-ink">
+              <Clock3 className="shrink-0 text-[#0057ff]" size={18} />
+              <p className="min-w-0 truncate">
+                {selectedSlot
+                  ? `Cita con ${selectedSlot.hairdresser_name} a las ${selectedSlot.time}`
+                  : "Elige una hora verde."}
+              </p>
+            </div>
+
+            <button disabled={!selectedSlot || loading} className="h-12 rounded-[8px] bg-[#0057ff] px-3 text-sm font-black text-white disabled:opacity-45 sm:text-base">
+              {loading ? "Confirmando..." : "Confirmar reserva"}
+            </button>
           </div>
         </section>
       </form>
