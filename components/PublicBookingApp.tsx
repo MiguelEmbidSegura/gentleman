@@ -30,10 +30,11 @@ type LocalDayOff = {
 const DAYS_OFF_STORAGE_KEY = "gentleman_days_off";
 const PENDING_BOOKING_KEY = "gentleman_pending_booking";
 const SELECTED_SERVICE = INITIAL_SERVICES[0];
-const WHATSAPP_PHONE = "+34647623713";
+const DEFAULT_CONTACT_PHONE = "+34655874680";
+const WHATSAPP_PHONE = DEFAULT_CONTACT_PHONE;
 const hairdresserPhones: Record<HairdresserId, string> = {
-  [HAIRDRESSER_IDS.alberto]: process.env.NEXT_PUBLIC_ALBERTO_PHONE ?? "+34647623713",
-  [HAIRDRESSER_IDS.ruben]: process.env.NEXT_PUBLIC_RUBEN_PHONE ?? "+34647623713"
+  [HAIRDRESSER_IDS.alberto]: process.env.NEXT_PUBLIC_ALBERTO_PHONE ?? DEFAULT_CONTACT_PHONE,
+  [HAIRDRESSER_IDS.ruben]: process.env.NEXT_PUBLIC_RUBEN_PHONE ?? DEFAULT_CONTACT_PHONE
 };
 
 function stableNumber(value: string) {
@@ -320,7 +321,7 @@ export function PublicBookingApp() {
                   value={clientPhone}
                   onChange={(event) => setClientPhone(event.target.value)}
                   inputMode="tel"
-                  placeholder="647 623 713"
+                  placeholder="655 874 680"
                   className="h-11 min-w-0 bg-paper px-3 text-base font-semibold normal-case tracking-normal outline-none"
                   required
                 />

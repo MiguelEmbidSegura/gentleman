@@ -72,7 +72,7 @@ NEXT_PUBLIC_SITE_URL=
 
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` pueden usarse en cliente. `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET` son solo de servidor y nunca deben exponerse en navegador. `.env.local` no debe subirse a GitHub.
 
-Para local, `NEXT_PUBLIC_SITE_URL=http://localhost:3000`. Para Alberto y Ruben puedes usar `+34647623713` en los telefonos.
+Para local, `NEXT_PUBLIC_SITE_URL=http://localhost:3000`. Para Alberto y Ruben puedes usar `+34655874680` en los telefonos.
 
 ## Configurar Stripe
 
