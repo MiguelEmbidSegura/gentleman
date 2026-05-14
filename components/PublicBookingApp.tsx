@@ -244,7 +244,7 @@ export function PublicBookingApp() {
 
       <form onSubmit={submit} className="mt-3 grid gap-3 lg:grid-cols-[300px_1fr]">
         <section className="rounded-[8px] border border-line bg-white p-3 shadow-sm">
-          <label className="block text-xs font-black uppercase tracking-wide text-ink/55">Elige tu Peluquero</label>
+          <label className="block text-xs font-black uppercase tracking-wide text-black">Elige tu Peluquero</label>
           <div className="mt-2 grid grid-cols-3 gap-1.5">
             <button type="button" onClick={() => setHairdresserId("any")} className={clsx("h-10 rounded-[8px] border text-xs font-black", hairdresserId === "any" ? "border-[#0057ff] bg-[#0057ff] text-white shadow-sm" : "border-line bg-paper")}>Cualquiera</button>
             {HAIRDRESSERS.map((hairdresser) => (
@@ -286,7 +286,7 @@ export function PublicBookingApp() {
             </a>
           </div>
 
-          <label className="mt-3 block text-xs font-black uppercase tracking-wide text-ink/55">Fecha</label>
+          <label className="mt-3 block text-xs font-black uppercase tracking-wide text-black">Fecha</label>
           <div className="relative mt-1">
             <CalendarDays className="pointer-events-none absolute left-3 top-3 text-ink/45" size={18} />
           <input
@@ -299,10 +299,10 @@ export function PublicBookingApp() {
           </div>
 
           <div className="mt-3 grid gap-2">
-            <label className="text-xs font-black uppercase tracking-wide text-ink/55">Nombre
+            <label className="text-xs font-black uppercase tracking-wide text-black">Nombre
               <input value={clientName} onChange={(event) => setClientName(event.target.value)} className="mt-1 h-10 w-full rounded-[8px] border border-line bg-paper px-3 text-sm font-semibold normal-case tracking-normal outline-none focus:border-[#0057ff]" required />
             </label>
-            <label className="text-xs font-black uppercase tracking-wide text-ink/55">Telefono
+            <label className="text-xs font-black uppercase tracking-wide text-black">Telefono
               <div className="mt-1 grid grid-cols-[104px_minmax(0,1fr)] overflow-hidden rounded-[8px] border border-line bg-paper focus-within:border-[#0057ff]">
                 <select
                   value={countryCode}
@@ -329,7 +329,7 @@ export function PublicBookingApp() {
             </label>
           </div>
 
-          <label className="mt-3 block text-xs font-black uppercase tracking-wide text-ink/55">Notas
+          <label className="mt-3 block text-xs font-black uppercase tracking-wide text-black">Notas
             <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={2} className="mt-1 w-full rounded-[8px] border border-line bg-paper px-3 py-2 text-sm font-semibold normal-case tracking-normal outline-none focus:border-[#0057ff]" />
           </label>
 
