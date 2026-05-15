@@ -15,6 +15,7 @@ function SuccessContent() {
   const sessionId = params.get("session_id");
   const appointmentToken = params.get("appointment_token");
   const isDebugPayment = params.get("debug") === "1";
+  const emailStatus = params.get("email_status");
   const [manageUrl, setManageUrl] = useState("");
   const [calendarUrl, setCalendarUrl] = useState("");
   const [appointment, setAppointment] = useState<{
@@ -89,6 +90,16 @@ function SuccessContent() {
           {appointment?.start_time ?? pending?.start_time ? <p className="mt-1 text-xl font-black text-ink">{(appointment?.start_time ?? pending?.start_time)?.slice(0, 5)}</p> : null}
           {appointment?.hairdressers?.name ? <p className="mt-1">Con {appointment.hairdressers.name}</p> : null}
         </div>
+      ) : null}
+      {isDebugPayment && emailStatus === "not_configured" ? (
+        <p className="mt-3 rounded-[8px] border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-900">
+          El email automático todavía no está activado en esta simulación.
+        </p>
+      ) : null}
+      {isDebugPayment && emailStatus === "sent" ? (
+        <p className="mt-3 rounded-[8px] border border-lime-300 bg-lime-50 px-3 py-2 text-sm font-bold text-lime-900">
+          La confirmación se ha enviado por email.
+        </p>
       ) : null}
       {sessionId ? <p className="mt-3 break-all text-xs font-semibold text-ink/40">Stripe: {sessionId}</p> : null}
       {manageUrl ? (

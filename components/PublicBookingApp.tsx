@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { CalendarDays, CheckCircle2, Clock3, Pencil, Trash2, X } from "lucide-react";
+import { CalendarDays, Clock3, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { buildWhatsAppUrl, formatDateShort, getTodayKey } from "@/lib/date";
@@ -107,13 +107,9 @@ export function PublicBookingApp() {
   const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
-  const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [emailStatus, setEmailStatus] = useState<"sent" | "not_configured" | "provider_error" | "">("");
   const [daysOff, setDaysOff] = useState<LocalDayOff[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [lastManageUrl, setLastManageUrl] = useState("");
-  const [lastCalendarUrl, setLastCalendarUrl] = useState("");
 
   const slots = useMemo(
     () => buildFakeSlots(date, hairdresserId, SELECTED_SERVICE.duration_minutes, daysOff),
@@ -127,14 +123,10 @@ export function PublicBookingApp() {
   useEffect(() => {
     const savedDaysOff = window.localStorage.getItem(DAYS_OFF_STORAGE_KEY);
     if (savedDaysOff) setDaysOff(JSON.parse(savedDaysOff));
-
-    const savedManageUrl = window.localStorage.getItem(LAST_MANAGE_URL_KEY);
-    if (savedManageUrl) setLastManageUrl(savedManageUrl);
   }, []);
 
   useEffect(() => {
     setSelectedSlot(null);
-    setDone(false);
   }, [date, hairdresserId]);
 
   async function submit(event: FormEvent) {
@@ -205,13 +197,9 @@ export function PublicBookingApp() {
         client_phone: `${countryCode}${clientPhone}`
       };
 
-      setDone(true);
-      setLastManageUrl(payload.manage_url);
-      setLastCalendarUrl(payload.calendar_url ?? "");
-      setEmailStatus(payload.email_status ?? "");
       window.localStorage.setItem(LAST_MANAGE_URL_KEY, payload.manage_url);
       window.localStorage.setItem(LAST_BOOKING_SUMMARY_KEY, JSON.stringify(bookingSummary));
-      setLoading(false);
+      window.location.href = payload.url;
       return;
     }
 
@@ -249,55 +237,6 @@ export function PublicBookingApp() {
           </div>
         </div>
       </header>
-
-      {done && selectedSlot ? (
-        <section className="mt-3 rounded-[8px] border border-lime-300 bg-lime-100 p-4 shadow-soft">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="text-lime-700" size={32} />
-              <div>
-                <h2 className="text-xl font-black text-ink">Reserva confirmada</h2>
-                <p className="text-sm font-semibold text-ink/70">
-                  {formatDateShort(date)} a las {selectedSlot.time} con {selectedSlot.hairdresser_name}.
-                </p>
-                <p className="mt-1 text-sm font-semibold text-ink/70">
-                  Móvil de la simulación: +34 {DEBUG_CLIENT_PHONE}
-                </p>
-                <p className="mt-1 text-sm font-semibold text-ink/70">
-                  {emailStatus === "sent"
-                    ? `Confirmación enviada a ${clientEmail}.`
-                    : `Confirmación por email pendiente de configurar para ${clientEmail}.`}
-                </p>
-              </div>
-            </div>
-            {lastManageUrl ? (
-              <div className="grid gap-2 sm:grid-cols-2">
-                <a
-                  href={lastManageUrl}
-                  className="flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#0057ff] px-3 text-sm font-black text-white"
-                >
-                  <Pencil size={16} />
-                  Modificar cita
-                </a>
-                <a
-                  href={lastManageUrl}
-                  className="flex h-11 items-center justify-center gap-2 rounded-[8px] border border-clay/30 bg-clay/10 px-3 text-sm font-black text-clay"
-                >
-                  <Trash2 size={16} />
-                  Anular cita
-                </a>
-                <a
-                  href={lastCalendarUrl}
-                  className="flex h-11 items-center justify-center gap-2 rounded-[8px] border border-line bg-white px-3 text-sm font-black text-ink"
-                >
-                  <CalendarDays size={16} />
-                  Añadir al calendario
-                </a>
-              </div>
-            ) : null}
-          </div>
-        </section>
-      ) : null}
 
       {error ? (
         <div className="mt-4 rounded-[8px] border border-clay/30 bg-clay/10 p-3 text-sm font-semibold text-clay">

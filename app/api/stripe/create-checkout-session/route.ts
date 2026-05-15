@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
         siteUrl
       });
       return NextResponse.json({
-        url: `${siteUrl.replace(/\/$/, "")}/reservar/success?debug=1&appointment_token=${encodeURIComponent(appointmentToken)}`,
+        url: `${siteUrl.replace(/\/$/, "")}/reservar/success?debug=1&appointment_token=${encodeURIComponent(appointmentToken)}&email_status=${encodeURIComponent(email.sent ? "sent" : email.reason)}`,
         appointment_id: appointment.id,
         simulated_payment: true,
         manage_url: manageUrl,
