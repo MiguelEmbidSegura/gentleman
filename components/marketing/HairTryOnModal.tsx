@@ -17,6 +17,18 @@ const DEFAULT_OVERLAY = {
   rotation: 0
 };
 
+const LOOK_PRESETS: Record<HairLookId, Omit<typeof DEFAULT_OVERLAY, "lookId">> = {
+  clasico: { scale: 1, offsetX: 0, offsetY: -88, rotation: 0 },
+  fade: { scale: 0.98, offsetX: 0, offsetY: -90, rotation: 0 },
+  tupe: { scale: 1.02, offsetX: 0, offsetY: -104, rotation: -2 },
+  largo: { scale: 1.02, offsetX: 0, offsetY: -62, rotation: 0 },
+  rubio: { scale: 1, offsetX: 0, offsetY: -88, rotation: 0 },
+  azul: { scale: 1, offsetX: 0, offsetY: -88, rotation: 0 },
+  rosa: { scale: 1, offsetX: 0, offsetY: -88, rotation: 0 },
+  calvo: { scale: 1, offsetX: 0, offsetY: -86, rotation: 0 },
+  bigote: { scale: 0.86, offsetX: 0, offsetY: 28, rotation: 0 }
+};
+
 export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -86,6 +98,15 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
     setOffsetX(DEFAULT_OVERLAY.offsetX);
     setOffsetY(DEFAULT_OVERLAY.offsetY);
     setRotation(DEFAULT_OVERLAY.rotation);
+  }
+
+  function applyLook(nextLookId: HairLookId) {
+    const preset = LOOK_PRESETS[nextLookId];
+    setLookId(nextLookId);
+    setScale(preset.scale);
+    setOffsetX(preset.offsetX);
+    setOffsetY(preset.offsetY);
+    setRotation(preset.rotation);
   }
 
   if (!open) return null;
@@ -172,7 +193,7 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
                   <button
                     key={look.id}
                     type="button"
-                    onClick={() => setLookId(look.id)}
+                    onClick={() => applyLook(look.id)}
                     className={lookId === look.id
                       ? "h-11 rounded-full border border-[#0057ff] bg-[#0057ff] px-4 text-sm font-black text-white"
                       : "h-11 rounded-full border border-line bg-paper px-4 text-sm font-black text-ink"}

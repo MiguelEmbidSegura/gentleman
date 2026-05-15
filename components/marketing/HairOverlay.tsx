@@ -66,11 +66,47 @@ function HairShape({ lookId }: { lookId: HairLookId }) {
     case "clasico":
       return <FullHair id="classic" base="#2b1a13" shine="#6b4632" />;
     case "rubio":
-      return <FullHair id="blonde" base="#d7b34d" shine="#fff0a8" />;
+      return (
+        <svg viewBox="0 0 260 190" className="h-full w-full drop-shadow-[0_10px_10px_rgba(0,0,0,0.25)]" aria-hidden="true">
+          <defs>
+            <linearGradient id="blonde-main" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#fff3a6" />
+              <stop offset="42%" stopColor="#e2bd4c" />
+              <stop offset="100%" stopColor="#8a6412" />
+            </linearGradient>
+          </defs>
+          <path d="M27 138C22 75 53 24 118 18c67-6 114 34 113 111-22-18-46-26-101-26-48 0-80 10-103 35Z" fill="url(#blonde-main)" />
+          <path d="M42 113c18-21 40-31 65-34M102 78c19 5 34 14 45 27M151 80c22 4 43 14 61 31" stroke="#fff6bf" strokeOpacity="0.62" strokeWidth="10" strokeLinecap="round" />
+        </svg>
+      );
     case "azul":
-      return <FullHair id="blue" base="#1d4ed8" shine="#93c5fd" />;
+      return (
+        <svg viewBox="0 0 260 205" className="h-full w-full drop-shadow-[0_12px_12px_rgba(0,0,0,0.28)]" aria-hidden="true">
+          <defs>
+            <linearGradient id="blue-main" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#93c5fd" />
+              <stop offset="45%" stopColor="#2563eb" />
+              <stop offset="100%" stopColor="#172554" />
+            </linearGradient>
+          </defs>
+          <path d="M34 151C28 92 58 46 104 37c14-24 37-37 63-34 31 4 55 27 65 67 9 37 7 60 1 81-20-18-46-29-102-29-45 0-77 10-97 29Z" fill="url(#blue-main)" />
+          <path d="M95 53c18-17 52-24 82 7" stroke="#bfdbfe" strokeOpacity="0.58" strokeWidth="13" strokeLinecap="round" />
+        </svg>
+      );
     case "rosa":
-      return <FullHair id="pink" base="#db2777" shine="#fbcfe8" />;
+      return (
+        <svg viewBox="0 0 260 230" className="h-full w-full drop-shadow-[0_12px_12px_rgba(0,0,0,0.25)]" aria-hidden="true">
+          <defs>
+            <linearGradient id="pink-main" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#fbcfe8" />
+              <stop offset="40%" stopColor="#ec4899" />
+              <stop offset="100%" stopColor="#831843" />
+            </linearGradient>
+          </defs>
+          <path d="M24 118C20 54 57 17 127 17c71 0 110 39 109 105-1 28-8 53-20 76l-29-13c10-22 15-43 15-62-16-19-39-29-75-29-34 0-58 10-74 29 1 22 6 43 16 63l-29 12c-10-23-16-49-16-80Z" fill="url(#pink-main)" />
+          <path d="M46 111c21-24 47-36 81-36 35 0 62 12 85 37" stroke="#fdf2f8" strokeOpacity="0.46" strokeWidth="11" strokeLinecap="round" />
+        </svg>
+      );
     case "fade":
       return (
         <svg viewBox="0 0 260 190" className="h-full w-full drop-shadow-[0_10px_10px_rgba(0,0,0,0.25)]" aria-hidden="true">

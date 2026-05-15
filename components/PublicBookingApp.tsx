@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { PublicChatbot } from "@/components/PublicChatbot";
 import { HairTryOnWidget } from "@/components/marketing/HairTryOnWidget";
+import { getInitialPublicBookingDate } from "@/lib/booking-date";
 import { buildWhatsAppUrl, formatDateShort, getTodayKey } from "@/lib/date";
 import { getDayTimelineSlots, isWithinWorkingHours } from "@/lib/availability";
 import { HAIRDRESSER_IDS, HAIRDRESSERS, INITIAL_SERVICES } from "@/lib/schedule";
@@ -68,7 +69,7 @@ export function PublicBookingApp() {
     process.env.NEXT_PUBLIC_DEBUG_BYPASS_STRIPE?.trim() === "true" ||
     !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
   const [hairdresserId, setHairdresserId] = useState<HairdresserChoice>("any");
-  const [date, setDate] = useState(getTodayKey());
+  const [date, setDate] = useState(() => getInitialPublicBookingDate());
   const [selectedSlot, setSelectedSlot] = useState<FakeSlot | null>(null);
   const [clientName, setClientName] = useState("");
   const [countryCode, setCountryCode] = useState("+34");

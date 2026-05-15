@@ -1,3 +1,4 @@
+import { getBusinessMinutes, getTodayKey } from "@/lib/date";
 import { SLOT_MINUTES, workingSchedule } from "@/lib/schedule";
 import { appointmentBlocksAvailability } from "@/lib/payments";
 import type {
@@ -156,8 +157,11 @@ export function canCreateAppointment(
 
   if (options.disallowPast) {
     const now = options.now ?? new Date();
-    const appointmentDate = new Date(`${newAppointment.date}T${newAppointment.start_time}:00`);
-    if (appointmentDate < now) {
+    const todayKey = getTodayKey(now);
+    const appointmentStart = timeToMinutes(newAppointment.start_time);
+    const isPastDay = newAppointment.date < todayKey;
+    const isPastOrCurrentSlot = newAppointment.date === todayKey && appointmentStart <= getBusinessMinutes(now);
+    if (isPastDay || isPastOrCurrentSlot) {
       return { ok: false, reason: "No se puede reservar en el pasado." };
     }
   }
