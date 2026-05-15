@@ -61,7 +61,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 
   if (blocksError) return NextResponse.json({ error: blocksError.message }, { status: 500 });
 
-  const availability = canCreateAppointment({ ...input, id: params.id }, existingAppointments ?? [], blocks ?? []);
+  const availability = canCreateAppointment({ ...input, id: params.id }, existingAppointments ?? [], blocks ?? [], { disallowPast: true });
   if (!availability.ok) return NextResponse.json({ error: availability.reason }, { status: 400 });
 
   try {

@@ -122,6 +122,20 @@ describe("availability", () => {
     expect(isWithinWorkingHours(HAIRDRESSER_IDS.alberto, monday, "14:30", 30)).toBe(false);
   });
 
+  it("rechaza citas pasadas cuando la validacion lo exige", () => {
+    const now = new Date("2026-05-11T10:00:00.000Z"); // 12:00 en Madrid
+
+    expect(canCreateAppointment(input({ start_time: "11:45" }), [], [], { disallowPast: true, now })).toEqual({
+      ok: false,
+      reason: "No se puede reservar en el pasado."
+    });
+    expect(canCreateAppointment(input({ start_time: "12:00" }), [], [], { disallowPast: true, now })).toEqual({
+      ok: false,
+      reason: "No se puede reservar en el pasado."
+    });
+    expect(canCreateAppointment(input({ start_time: "12:15" }), [], [], { disallowPast: true, now }).ok).toBe(true);
+  });
+
   it("valida los horarios de Alberto entre semana", () => {
     expect(isWithinWorkingHours(HAIRDRESSER_IDS.alberto, monday, "08:45", 15)).toBe(true);
     expect(isWithinWorkingHours(HAIRDRESSER_IDS.alberto, monday, "14:30", 15)).toBe(true);
