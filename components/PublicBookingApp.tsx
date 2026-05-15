@@ -284,6 +284,9 @@ export function PublicBookingApp() {
             >
               Enviar WhatsApp
             </a>
+            <p className="mt-3 text-xs font-semibold leading-snug text-ink/60">
+              Tras pagar recibirás un enlace privado para modificar o anular la cita cuando lo necesites.
+            </p>
           </div>
 
           <label className="mt-3 block text-xs font-black uppercase tracking-wide text-black">Fecha</label>

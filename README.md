@@ -7,6 +7,7 @@ Rutas importantes:
 - `/` y `/reservar`: reserva publica para clientes.
 - `/reservar/success`: pago recibido.
 - `/reservar/cancel`: pago cancelado.
+- `/reservar/gestionar/[enlace-privado]`: modificar o anular una cita publica ya creada.
 - `/admin/dias-no-trabaja`: Alberto y Ruben gestionan dias y horas que no trabajan.
 - `/admin`: panel privado completo del MVP.
 
@@ -255,6 +256,7 @@ npm run test
 - Proteger rutas admin.
 - No mostrar datos de clientes en rutas publicas.
 - La confirmacion real de citas se hace por webhook de Stripe, no por la pagina `success`.
+- Las citas publicas confirmadas muestran un enlace privado firmado para que el cliente pueda modificarlas o anularlas sin cuenta.
 
 ## Limitaciones iniciales
 
