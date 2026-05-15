@@ -5,9 +5,11 @@ import {
   BOOKING_CURRENCY,
   BOOKING_DEPOSIT_CENTS,
   STRIPE_PRODUCT_NAME,
+  buildCompletedPaymentUpdate,
   buildPendingPaymentAppointmentFields,
   getCheckoutUrls
 } from "@/lib/payments";
+import { createAppointmentAccessToken } from "@/lib/appointment-access";
 import { HAIRDRESSERS } from "@/lib/schedule";
 import { createStripeClient } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -123,6 +125,43 @@ export async function POST(request: NextRequest) {
 
   try {
     const client = await findOrCreateClient(body);
+    const shouldSimulatePayment = !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || !process.env.STRIPE_SECRET_KEY;
+
+    if (shouldSimulatePayment) {
+      const { data: appointment, error: appointmentError } = await supabase
+        .from("appointments")
+        .insert({
+          client_id: client.id,
+          hairdresser_id: selectedHairdresser.id,
+          service_id: service.id,
+          date: body.date,
+          start_time: body.start_time,
+          duration_minutes: duration,
+          ...buildCompletedPaymentUpdate({
+            amountPaidCents: BOOKING_DEPOSIT_CENTS,
+            currency: BOOKING_CURRENCY,
+            paymentIntentId: null,
+            paidAt: new Date().toISOString()
+          }),
+          notes: body.notes?.trim() || null,
+          delay_minutes: 0,
+          source: "public",
+          created_by: null
+        })
+        .select("*, clients(*), services(*), hairdressers(*)")
+        .single();
+
+      if (appointmentError) throw appointmentError;
+
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || request.headers.get("origin") || new URL(request.url).origin;
+      const appointmentToken = createAppointmentAccessToken(appointment.id);
+      return NextResponse.json({
+        url: `${siteUrl.replace(/\/$/, "")}/reservar/success?debug=1&appointment_token=${encodeURIComponent(appointmentToken)}`,
+        appointment_id: appointment.id,
+        simulated_payment: true
+      });
+    }
+
     const { data: appointment, error: appointmentError } = await supabase
       .from("appointments")
       .insert({

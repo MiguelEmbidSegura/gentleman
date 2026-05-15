@@ -79,6 +79,8 @@ Para local, `NEXT_PUBLIC_SITE_URL=http://localhost:3000`. Para Alberto y Ruben p
 
 Stripe Checkout cobra un pago previo obligatorio de 8,00 EUR antes de confirmar la cita. La cita se crea primero como `pending_payment` y solo pasa a `confirmed` cuando llega un webhook valido de Stripe.
 
+Mientras Stripe no este configurado, la app entra en modo depuracion: al confirmar una reserva publica simula el pago de 8,00 EUR, crea la cita como confirmada y permite recorrer el flujo completo de modificacion/anulacion.
+
 1. Crea una cuenta en Stripe.
 2. Entra en Developers > API keys.
 3. Copia la publishable key.

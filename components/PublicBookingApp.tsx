@@ -136,11 +136,6 @@ export function PublicBookingApp() {
 
   async function confirmBooking() {
     if (!selectedSlot) return;
-    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-      setError("Falta configurar NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.");
-      setConfirmOpen(false);
-      return;
-    }
     setLoading(true);
     setError("");
     setConfirmOpen(false);
@@ -176,14 +171,14 @@ export function PublicBookingApp() {
     if (response && !response.ok) {
       const payload = await response.json().catch(() => ({}));
       setLoading(false);
-      setError(payload.error ?? "No se pudo iniciar el pago con Stripe.");
+      setError(payload.error ?? "No se pudo confirmar la reserva.");
       return;
     }
 
     const payload = await response?.json().catch(() => ({}));
     if (!payload?.url) {
       setLoading(false);
-      setError("No se pudo abrir Stripe.");
+      setError("No se pudo continuar con la reserva.");
       return;
     }
 
@@ -415,7 +410,9 @@ export function PublicBookingApp() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0057ff]">Confirmar</p>
-                <h2 className="mt-1 text-2xl font-black text-ink">Pagar reserva</h2>
+                <h2 className="mt-1 text-2xl font-black text-ink">
+                  {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? "Pagar reserva" : "Confirmar reserva"}
+                </h2>
               </div>
               <button type="button" onClick={() => setConfirmOpen(false)} className="grid h-9 w-9 place-items-center rounded-[8px] border border-line bg-paper" aria-label="Cerrar">
                 <X size={18} />
@@ -425,14 +422,18 @@ export function PublicBookingApp() {
               <p>{formatDateShort(date)}</p>
               <p className="mt-1 text-xl font-black text-ink">{selectedSlot.time}</p>
               <p className="mt-1">Con {selectedSlot.hairdresser_name}</p>
-              <p className="mt-3 rounded-[8px] bg-white p-2 text-[#0057ff]">Pago previo obligatorio: 8 €</p>
+              <p className="mt-3 rounded-[8px] bg-white p-2 text-[#0057ff]">
+                {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+                  ? "Pago previo obligatorio: 8 €"
+                  : "Modo depuración: se simulará el pago de 8 €."}
+              </p>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button type="button" onClick={() => setConfirmOpen(false)} className="h-11 rounded-[8px] border border-line bg-paper font-black text-ink">
                 Cancelar
               </button>
               <button type="button" onClick={confirmBooking} className="h-11 rounded-[8px] bg-[#0057ff] font-black text-white">
-                Ir a pagar
+                {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? "Ir a pagar" : "Confirmar"}
               </button>
             </div>
           </section>

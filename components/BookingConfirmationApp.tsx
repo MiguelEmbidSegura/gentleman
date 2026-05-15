@@ -10,6 +10,8 @@ const PENDING_BOOKING_KEY = "gentleman_pending_booking";
 function SuccessContent() {
   const params = useSearchParams();
   const sessionId = params.get("session_id");
+  const appointmentToken = params.get("appointment_token");
+  const isDebugPayment = params.get("debug") === "1";
   const [manageUrl, setManageUrl] = useState("");
   const [appointment, setAppointment] = useState<{
     date?: string;
@@ -30,19 +32,22 @@ function SuccessContent() {
   }, []);
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId && !appointmentToken) return;
     const currentSessionId = sessionId;
+    const currentAppointmentToken = appointmentToken;
 
     async function loadConfirmation() {
-      const response = await fetch(`/api/public-appointments/confirmation?session_id=${encodeURIComponent(currentSessionId)}`);
+      const response = currentSessionId
+        ? await fetch(`/api/public-appointments/confirmation?session_id=${encodeURIComponent(currentSessionId)}`)
+        : await fetch(`/api/public-appointments/${encodeURIComponent(currentAppointmentToken!)}`);
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) return;
-      setManageUrl(payload.manage_url ?? "");
+      setManageUrl(payload.manage_url ?? (currentAppointmentToken ? `/reservar/gestionar/${encodeURIComponent(currentAppointmentToken)}` : ""));
       setAppointment(payload.appointment ?? null);
     }
 
     loadConfirmation();
-  }, [sessionId]);
+  }, [appointmentToken, sessionId]);
 
   async function copyManageLink() {
     if (!manageUrl) return;
@@ -53,8 +58,10 @@ function SuccessContent() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-8 text-center safe-bottom">
       <CheckCircle2 className="mx-auto text-lime-700" size={52} />
-      <h1 className="mt-4 text-3xl font-black text-ink">Pago recibido</h1>
-      <p className="mt-3 font-semibold text-ink/70">La cita ha sido confirmada.</p>
+      <h1 className="mt-4 text-3xl font-black text-ink">{isDebugPayment ? "Pago simulado" : "Pago recibido"}</h1>
+      <p className="mt-3 font-semibold text-ink/70">
+        {isDebugPayment ? "La cita se ha confirmado en modo depuración." : "La cita ha sido confirmada."}
+      </p>
       {appointment || pending ? (
         <div className="mt-5 rounded-[8px] border border-line bg-white p-4 text-sm font-bold text-ink/70">
           {appointment?.date ?? pending?.date ? <p>{appointment?.date ?? pending?.date}</p> : null}
