@@ -29,6 +29,16 @@ export function ManageAppointmentApp() {
   const canEdit = appointment?.status === "confirmed" || appointment?.status === "pending_payment";
   const serviceName = appointment?.services?.name ?? "Servicio";
   const hairdresserName = appointment?.hairdressers?.name ?? "Peluquero";
+  const lockedStatusMessage =
+    appointment?.status === "cancelled"
+      ? "Esta cita está anulada."
+      : appointment?.status === "completed"
+        ? "Esta cita ya se ha completado."
+        : appointment?.status === "expired"
+          ? "Esta cita ha caducado."
+          : appointment?.status === "no_show"
+            ? "Esta cita figura como no presentada."
+            : "Esta cita ya no admite cambios desde la web.";
 
   useEffect(() => {
     async function loadAppointment() {
@@ -234,7 +244,7 @@ export function ManageAppointmentApp() {
           </>
         ) : (
           <div className="mt-5 rounded-[8px] border border-line bg-paper p-4 font-semibold text-ink/70">
-            Esta cita ya no admite cambios desde la web.
+            {lockedStatusMessage}
           </div>
         )}
       </section>
