@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
 
       if (appointmentError) throw appointmentError;
 
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || request.headers.get("origin") || new URL(request.url).origin;
+      const siteUrl = request.headers.get("origin") || new URL(request.url).origin;
       const appointmentToken = createAppointmentAccessToken(appointment.id);
       return NextResponse.json({
         url: `${siteUrl.replace(/\/$/, "")}/reservar/success?debug=1&appointment_token=${encodeURIComponent(appointmentToken)}`,
