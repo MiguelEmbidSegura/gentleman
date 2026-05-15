@@ -223,6 +223,13 @@ export function ManageAppointmentApp() {
                 <Trash2 size={18} />
                 Anular cita
               </button>
+              <a
+                href={`/api/public-appointments/${encodeURIComponent(token)}/calendar`}
+                className="flex h-12 items-center justify-center gap-2 rounded-[8px] border border-line bg-white px-4 font-black text-ink"
+              >
+                <CalendarDays size={18} />
+                Añadir al calendario
+              </a>
             </div>
           </>
         ) : (

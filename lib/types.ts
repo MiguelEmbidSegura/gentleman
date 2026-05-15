@@ -88,6 +88,7 @@ export type AppointmentInput = {
   client_id?: string;
   client_name: string;
   client_phone?: string;
+  client_email?: string;
   hairdresser_id: HairdresserId;
   service_id: string;
   date: string;

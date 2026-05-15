@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
   const token = createAppointmentAccessToken(data.id);
   return NextResponse.json({
     appointment: data,
-    manage_url: `/reservar/gestionar/${encodeURIComponent(token)}`
+    manage_url: `/reservar/gestionar/${encodeURIComponent(token)}`,
+    calendar_url: `/api/public-appointments/${encodeURIComponent(token)}/calendar`
   });
 }

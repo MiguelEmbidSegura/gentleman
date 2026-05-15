@@ -16,6 +16,7 @@ function SuccessContent() {
   const appointmentToken = params.get("appointment_token");
   const isDebugPayment = params.get("debug") === "1";
   const [manageUrl, setManageUrl] = useState("");
+  const [calendarUrl, setCalendarUrl] = useState("");
   const [appointment, setAppointment] = useState<{
     date?: string;
     start_time?: string;
@@ -47,8 +48,10 @@ function SuccessContent() {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) return;
       const nextManageUrl = payload.manage_url ?? (currentAppointmentToken ? `/reservar/gestionar/${encodeURIComponent(currentAppointmentToken)}` : "");
+      const nextCalendarUrl = payload.calendar_url ?? (currentAppointmentToken ? `/api/public-appointments/${encodeURIComponent(currentAppointmentToken)}/calendar` : "");
       const nextAppointment = payload.appointment ?? null;
       setManageUrl(nextManageUrl);
+      setCalendarUrl(nextCalendarUrl);
       setAppointment(nextAppointment);
 
       if (nextManageUrl) {
@@ -110,6 +113,14 @@ function SuccessContent() {
             >
               {copied ? "Enlace copiado" : "Copiar enlace"}
             </button>
+            {calendarUrl ? (
+              <a
+                href={calendarUrl}
+                className="rounded-[8px] border border-line bg-white px-4 py-3 text-center font-black text-ink"
+              >
+                Añadir al calendario
+              </a>
+            ) : null}
             <a
               href={`https://wa.me/34${DEBUG_CLIENT_PHONE}?text=${encodeURIComponent(
                 `Confirmación de cita Gentleman: ${appointment?.date ?? pending?.date ?? ""} ${appointment?.start_time?.slice(0, 5) ?? pending?.start_time ?? ""}.`

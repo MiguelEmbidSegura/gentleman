@@ -104,13 +104,16 @@ export function PublicBookingApp() {
   const [clientName, setClientName] = useState("");
   const [countryCode, setCountryCode] = useState("+34");
   const [clientPhone, setClientPhone] = useState(isDebugPaymentMode ? DEBUG_CLIENT_PHONE : "");
+  const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<"sent" | "not_configured" | "provider_error" | "">("");
   const [daysOff, setDaysOff] = useState<LocalDayOff[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lastManageUrl, setLastManageUrl] = useState("");
+  const [lastCalendarUrl, setLastCalendarUrl] = useState("");
 
   const slots = useMemo(
     () => buildFakeSlots(date, hairdresserId, SELECTED_SERVICE.duration_minutes, daysOff),
@@ -153,6 +156,7 @@ export function PublicBookingApp() {
     const bookingPayload = {
       client_name: clientName,
       client_phone: `${countryCode}${clientPhone}`,
+      client_email: clientEmail,
       notes,
       service_id: SELECTED_SERVICE.id,
       duration_minutes: SELECTED_SERVICE.duration_minutes as ServiceDuration,
@@ -169,6 +173,7 @@ export function PublicBookingApp() {
       body: JSON.stringify({
         client_name: bookingPayload.client_name,
         client_phone: bookingPayload.client_phone,
+        client_email: bookingPayload.client_email,
         notes: bookingPayload.notes,
         service_id: bookingPayload.service_id,
         duration_minutes: bookingPayload.duration_minutes,
@@ -202,6 +207,8 @@ export function PublicBookingApp() {
 
       setDone(true);
       setLastManageUrl(payload.manage_url);
+      setLastCalendarUrl(payload.calendar_url ?? "");
+      setEmailStatus(payload.email_status ?? "");
       window.localStorage.setItem(LAST_MANAGE_URL_KEY, payload.manage_url);
       window.localStorage.setItem(LAST_BOOKING_SUMMARY_KEY, JSON.stringify(bookingSummary));
       setLoading(false);
@@ -256,6 +263,11 @@ export function PublicBookingApp() {
                 <p className="mt-1 text-sm font-semibold text-ink/70">
                   Móvil de la simulación: +34 {DEBUG_CLIENT_PHONE}
                 </p>
+                <p className="mt-1 text-sm font-semibold text-ink/70">
+                  {emailStatus === "sent"
+                    ? `Confirmación enviada a ${clientEmail}.`
+                    : `Confirmación por email pendiente de configurar para ${clientEmail}.`}
+                </p>
               </div>
             </div>
             {lastManageUrl ? (
@@ -273,6 +285,13 @@ export function PublicBookingApp() {
                 >
                   <Trash2 size={16} />
                   Anular cita
+                </a>
+                <a
+                  href={lastCalendarUrl}
+                  className="flex h-11 items-center justify-center gap-2 rounded-[8px] border border-line bg-white px-3 text-sm font-black text-ink"
+                >
+                  <CalendarDays size={16} />
+                  Añadir al calendario
                 </a>
               </div>
             ) : null}
@@ -373,6 +392,16 @@ export function PublicBookingApp() {
                   required
                 />
               </div>
+            </label>
+            <label className="text-xs font-black uppercase tracking-wide text-black">Email
+              <input
+                value={clientEmail}
+                onChange={(event) => setClientEmail(event.target.value)}
+                type="email"
+                placeholder="tu@email.com"
+                className="mt-1 h-10 w-full rounded-[8px] border border-line bg-paper px-3 text-sm font-semibold normal-case tracking-normal outline-none focus:border-[#0057ff]"
+                required
+              />
             </label>
           </div>
 

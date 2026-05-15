@@ -10,6 +10,7 @@ import {
   getCheckoutUrls
 } from "@/lib/payments";
 import { createAppointmentAccessToken } from "@/lib/appointment-access";
+import { sendAppointmentEmail } from "@/lib/email";
 import { HAIRDRESSERS } from "@/lib/schedule";
 import { createStripeClient } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -58,12 +59,16 @@ async function findOrCreateClient(input: CheckoutInput) {
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null) as CheckoutInput | null;
-  if (!body?.client_name || !body.client_phone || !body.service_id || !body.date || !body.start_time || !body.hairdresser_id) {
+  if (!body?.client_name || !body.client_phone || !body.client_email || !body.service_id || !body.date || !body.start_time || !body.hairdresser_id) {
     return NextResponse.json({ error: "Faltan datos obligatorios." }, { status: 400 });
   }
 
   if (!isReasonableSpanishPhone(body.client_phone)) {
     return NextResponse.json({ error: "Introduce un teléfono español válido." }, { status: 400 });
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.client_email.trim())) {
+    return NextResponse.json({ error: "Introduce un email válido." }, { status: 400 });
   }
 
   const supabase = getSupabaseAdmin();
@@ -160,11 +165,22 @@ export async function POST(request: NextRequest) {
 
       const siteUrl = request.headers.get("origin") || new URL(request.url).origin;
       const appointmentToken = createAppointmentAccessToken(appointment.id);
+      const manageUrl = `/reservar/gestionar/${encodeURIComponent(appointmentToken)}`;
+      const calendarUrl = `/api/public-appointments/${encodeURIComponent(appointmentToken)}/calendar`;
+      const email = await sendAppointmentEmail({
+        to: body.client_email.trim(),
+        appointment,
+        manageUrl,
+        calendarUrl,
+        siteUrl
+      });
       return NextResponse.json({
         url: `${siteUrl.replace(/\/$/, "")}/reservar/success?debug=1&appointment_token=${encodeURIComponent(appointmentToken)}`,
         appointment_id: appointment.id,
         simulated_payment: true,
-        manage_url: `/reservar/gestionar/${encodeURIComponent(appointmentToken)}`
+        manage_url: manageUrl,
+        calendar_url: calendarUrl,
+        email_status: email.sent ? "sent" : email.reason
       });
     }
 
@@ -210,6 +226,7 @@ export async function POST(request: NextRequest) {
         appointment_id: appointment.id,
         client_name: body.client_name,
         client_phone: normalizeSpanishPhone(body.client_phone),
+        client_email: body.client_email.trim(),
         hairdresser_id: selectedHairdresser.id,
         service_id: service.id,
         date: body.date,

@@ -69,9 +69,11 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 NEXT_PUBLIC_SITE_URL=
+RESEND_API_KEY=
+BOOKING_EMAIL_FROM=
 ```
 
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` pueden usarse en cliente. `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET` son solo de servidor y nunca deben exponerse en navegador. `.env.local` no debe subirse a GitHub.
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` pueden usarse en cliente. `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` y `RESEND_API_KEY` son solo de servidor y nunca deben exponerse en navegador. `.env.local` no debe subirse a GitHub.
 
 Para local, `NEXT_PUBLIC_SITE_URL=http://localhost:3000`. Para Alberto y Ruben puedes usar `+34655874680` en los telefonos.
 
@@ -111,6 +113,23 @@ https://TU_DOMINIO.com/api/stripe/webhook
 ```
 
 Copia el signing secret del webhook en `STRIPE_WEBHOOK_SECRET`. Prueba con tarjetas de prueba antes de pasar a produccion. No subas `.env.local` a GitHub.
+
+## Configurar confirmaciones por email
+
+La reserva publica pide un email y, cuando `RESEND_API_KEY` y `BOOKING_EMAIL_FROM` estan configurados, envia automaticamente una confirmacion con:
+
+- fecha y hora de la cita;
+- enlace privado para modificar o anular;
+- enlace para anadir la cita al calendario.
+
+Variables necesarias:
+
+```env
+RESEND_API_KEY=
+BOOKING_EMAIL_FROM=Gentleman <citas@tu-dominio.com>
+```
+
+Si todavia no configuras Resend, la reserva sigue funcionando y la interfaz indica que el email esta pendiente de configurar.
 
 ## Configurar Supabase
 
@@ -196,6 +215,8 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 NEXT_PUBLIC_SITE_URL=
+RESEND_API_KEY=
+BOOKING_EMAIL_FROM=
 ```
 
 ## Probar la app en Vercel
