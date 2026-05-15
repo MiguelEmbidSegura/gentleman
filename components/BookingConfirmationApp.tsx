@@ -101,6 +101,11 @@ function SuccessContent() {
           La confirmación se ha enviado por email.
         </p>
       ) : null}
+      {isDebugPayment && emailStatus === "provider_error" ? (
+        <p className="mt-3 rounded-[8px] border border-clay/30 bg-clay/10 px-3 py-2 text-sm font-bold text-clay">
+          No se pudo enviar el email de confirmación con el remitente de prueba actual.
+        </p>
+      ) : null}
       {sessionId ? <p className="mt-3 break-all text-xs font-semibold text-ink/40">Stripe: {sessionId}</p> : null}
       {manageUrl ? (
         <section className="mt-5 rounded-[8px] border border-[#0057ff]/20 bg-[#0057ff]/5 p-4 text-left">
