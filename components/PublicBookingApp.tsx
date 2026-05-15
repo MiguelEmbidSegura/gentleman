@@ -206,6 +206,23 @@ export function PublicBookingApp() {
       return;
     }
 
+    if (payload.simulated_payment && payload.manage_url) {
+      const bookingSummary = {
+        date,
+        start_time: selectedSlot.time,
+        hairdresser_name: selectedSlot.hairdresser_name,
+        client_phone: `${countryCode}${clientPhone}`
+      };
+
+      setDone(true);
+      setLastManageUrl(payload.manage_url);
+      setLastBookingSummary(bookingSummary);
+      window.localStorage.setItem(LAST_MANAGE_URL_KEY, payload.manage_url);
+      window.localStorage.setItem(LAST_BOOKING_SUMMARY_KEY, JSON.stringify(bookingSummary));
+      setLoading(false);
+      return;
+    }
+
     window.location.href = payload.url;
   }
 
@@ -299,14 +316,37 @@ export function PublicBookingApp() {
 
       {done && selectedSlot ? (
         <section className="mt-3 rounded-[8px] border border-lime-300 bg-lime-100 p-4 shadow-soft">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="text-lime-700" size={32} />
-            <div>
-              <h2 className="text-xl font-black text-ink">Reserva confirmada</h2>
-              <p className="text-sm font-semibold text-ink/70">
-                Cita con {selectedSlot.hairdresser_name}, {formatDateShort(date)} a las {selectedSlot.time}.
-              </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="text-lime-700" size={32} />
+              <div>
+                <h2 className="text-xl font-black text-ink">Reserva confirmada</h2>
+                <p className="text-sm font-semibold text-ink/70">
+                  {formatDateShort(date)} a las {selectedSlot.time} con {selectedSlot.hairdresser_name}.
+                </p>
+                <p className="mt-1 text-sm font-semibold text-ink/70">
+                  Móvil de la simulación: +34 {DEBUG_CLIENT_PHONE}
+                </p>
+              </div>
             </div>
+            {lastManageUrl ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <a
+                  href={lastManageUrl}
+                  className="flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#0057ff] px-3 text-sm font-black text-white"
+                >
+                  <Pencil size={16} />
+                  Modificar cita
+                </a>
+                <a
+                  href={lastManageUrl}
+                  className="flex h-11 items-center justify-center gap-2 rounded-[8px] border border-clay/30 bg-clay/10 px-3 text-sm font-black text-clay"
+                >
+                  <Trash2 size={16} />
+                  Anular cita
+                </a>
+              </div>
+            ) : null}
           </div>
         </section>
       ) : null}
