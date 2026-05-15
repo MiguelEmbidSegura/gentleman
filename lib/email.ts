@@ -11,6 +11,14 @@ type SendAppointmentEmailParams = {
   simulated?: boolean;
 };
 
+type SendManagementLinkEmailParams = {
+  to: string;
+  appointment: Appointment;
+  manageUrl: string;
+  calendarUrl: string;
+  siteUrl: string;
+};
+
 export type EmailSendResult =
   | { sent: true }
   | { sent: false; reason: "not_configured" | "provider_error" };
@@ -94,6 +102,60 @@ export async function sendAppointmentEmail({
       `Modificar o anular cita: ${fullManageUrl}`,
       `Añadir al calendario: ${fullCalendarUrl}`
     ].filter(Boolean).join("\n")
+  }).catch(() => null);
+
+  if (!result) return { sent: false, reason: "provider_error" };
+  return { sent: true };
+}
+
+export async function sendManagementLinkEmail({
+  to,
+  appointment,
+  manageUrl,
+  calendarUrl,
+  siteUrl
+}: SendManagementLinkEmailParams): Promise<EmailSendResult> {
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "");
+  const from = process.env.BOOKING_EMAIL_FROM;
+  if (!gmailUser || !gmailAppPassword || !from) return { sent: false, reason: "not_configured" };
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: gmailUser,
+      pass: gmailAppPassword
+    }
+  });
+
+  const fullManageUrl = absoluteUrl(siteUrl, manageUrl);
+  const fullCalendarUrl = absoluteUrl(siteUrl, calendarUrl);
+  const startTime = appointment.start_time.slice(0, 5);
+  const serviceName = appointment.services?.name ?? "Cita";
+
+  const result = await transporter.sendMail({
+    from,
+    to,
+    subject: `Enlace para gestionar tu cita en Gentleman · ${appointment.date} ${startTime}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+        <h1 style="margin-bottom:8px">Gestiona tu cita</h1>
+        <p><strong>${serviceName}</strong></p>
+        <p>${appointment.date} a las ${startTime}</p>
+        <p style="margin-top:24px">
+          <a href="${fullManageUrl}" style="display:inline-block;background:#0057ff;color:white;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:bold">
+            Modificar o anular cita
+          </a>
+        </p>
+        <p><a href="${fullCalendarUrl}">Añadir al calendario</a></p>
+      </div>
+    `,
+    text: [
+      "Gestiona tu cita",
+      `${serviceName}: ${appointment.date} a las ${startTime}`,
+      `Modificar o anular cita: ${fullManageUrl}`,
+      `Añadir al calendario: ${fullCalendarUrl}`
+    ].join("\n")
   }).catch(() => null);
 
   if (!result) return { sent: false, reason: "provider_error" };

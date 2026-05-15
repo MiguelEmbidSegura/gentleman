@@ -4,6 +4,7 @@ import Image from "next/image";
 import { CalendarDays, Clock3, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
+import { PublicChatbot } from "@/components/PublicChatbot";
 import { buildWhatsAppUrl, formatDateShort, getTodayKey } from "@/lib/date";
 import { getDayTimelineSlots, isWithinWorkingHours } from "@/lib/availability";
 import { HAIRDRESSER_IDS, HAIRDRESSERS, INITIAL_SERVICES } from "@/lib/schedule";
@@ -442,6 +443,7 @@ export function PublicBookingApp() {
           </section>
         </div>
       ) : null}
+      <PublicChatbot />
     </main>
   );
 }

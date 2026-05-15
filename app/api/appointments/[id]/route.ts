@@ -14,7 +14,8 @@ async function upsertClient(input: AppointmentInput) {
       .from("clients")
       .update({
         name: input.client_name.trim(),
-        phone: input.client_phone ? normalizeSpanishPhone(input.client_phone) : ""
+        phone: input.client_phone ? normalizeSpanishPhone(input.client_phone) : "",
+        email: input.client_email?.trim() || null
       })
       .eq("id", input.client_id)
       .select("*")
@@ -28,6 +29,7 @@ async function upsertClient(input: AppointmentInput) {
     .insert({
       name: input.client_name.trim(),
       phone: input.client_phone ? normalizeSpanishPhone(input.client_phone) : "",
+      email: input.client_email?.trim() || null,
       notes: null
     })
     .select("*")

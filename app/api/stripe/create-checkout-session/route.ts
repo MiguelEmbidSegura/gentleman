@@ -30,6 +30,7 @@ async function findOrCreateClient(input: CheckoutInput) {
   const supabase = getSupabaseAdmin();
   const phone = normalizeSpanishPhone(input.client_phone ?? "");
   const name = input.client_name.trim();
+  const email = input.client_email?.trim() || null;
 
   const { data: existingClient } = await supabase
     .from("clients")
@@ -40,7 +41,7 @@ async function findOrCreateClient(input: CheckoutInput) {
   if (existingClient) {
     const { data, error } = await supabase
       .from("clients")
-      .update({ name, phone })
+      .update({ name, phone, email })
       .eq("id", existingClient.id)
       .select("*")
       .single();
@@ -50,7 +51,7 @@ async function findOrCreateClient(input: CheckoutInput) {
 
   const { data, error } = await supabase
     .from("clients")
-    .insert({ name, phone, notes: null })
+    .insert({ name, phone, email, notes: null })
     .select("*")
     .single();
   if (error) throw error;
