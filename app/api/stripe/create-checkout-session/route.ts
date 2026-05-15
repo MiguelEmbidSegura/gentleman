@@ -176,12 +176,12 @@ export async function POST(request: NextRequest) {
         simulated: true
       });
       return NextResponse.json({
-        url: `${siteUrl.replace(/\/$/, "")}/reservar/success?debug=1&appointment_token=${encodeURIComponent(appointmentToken)}&email_status=${encodeURIComponent(email.sent ? "sent" : email.reason)}`,
+        url: `${siteUrl.replace(/\/$/, "")}/reservar/success?debug=1&appointment_token=${encodeURIComponent(appointmentToken)}&email_status=${encodeURIComponent(email.sent ? "accepted" : email.reason)}&email_to=${encodeURIComponent(body.client_email.trim())}`,
         appointment_id: appointment.id,
         simulated_payment: true,
         manage_url: manageUrl,
         calendar_url: calendarUrl,
-        email_status: email.sent ? "sent" : email.reason
+        email_status: email.sent ? "accepted" : email.reason
       });
     }
 

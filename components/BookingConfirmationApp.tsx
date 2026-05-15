@@ -16,6 +16,7 @@ function SuccessContent() {
   const appointmentToken = params.get("appointment_token");
   const isDebugPayment = params.get("debug") === "1";
   const emailStatus = params.get("email_status");
+  const emailTo = params.get("email_to");
   const [manageUrl, setManageUrl] = useState("");
   const [calendarUrl, setCalendarUrl] = useState("");
   const [appointment, setAppointment] = useState<{
@@ -96,9 +97,9 @@ function SuccessContent() {
           El email automático todavía no está activado en esta simulación.
         </p>
       ) : null}
-      {isDebugPayment && emailStatus === "sent" ? (
+      {isDebugPayment && emailStatus === "accepted" ? (
         <p className="mt-3 rounded-[8px] border border-lime-300 bg-lime-50 px-3 py-2 text-sm font-bold text-lime-900">
-          Te hemos enviado un correo con la confirmación, un recordatorio de la cita y los enlaces para modificarla o anularla.
+          Hemos solicitado el envío del correo a {emailTo ?? "tu email"} con la confirmación y los enlaces para modificar o anular la cita.
         </p>
       ) : null}
       {isDebugPayment && emailStatus === "provider_error" ? (
