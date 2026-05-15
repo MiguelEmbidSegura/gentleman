@@ -3,6 +3,8 @@
 import { Camera, CameraOff, RefreshCcw, RotateCcw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { HAIR_LOOKS, HairLookId, HairOverlay } from "@/components/marketing/HairOverlay";
+import { buildFaceGeometry, getAutoOverlayPlacement } from "@/lib/hair-fit";
+import type { FaceGeometry } from "@/lib/hair-fit";
 
 type HairTryOnModalProps = {
   open: boolean;
@@ -29,13 +31,25 @@ const LOOK_PRESETS: Record<HairLookId, Omit<typeof DEFAULT_OVERLAY, "lookId">> =
   bigote: { scale: 0.86, offsetX: 0, offsetY: 28, rotation: 0 }
 };
 
+function loadImage(source: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = source;
+  });
+}
+
 export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
+  const frameRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState("");
   const [cameraReady, setCameraReady] = useState(false);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [faceGeometry, setFaceGeometry] = useState<FaceGeometry | null>(null);
+  const [autoFitStatus, setAutoFitStatus] = useState<"idle" | "loading" | "ready" | "failed">("idle");
   const [lookId, setLookId] = useState<HairLookId>(DEFAULT_OVERLAY.lookId);
   const [scale, setScale] = useState(DEFAULT_OVERLAY.scale);
   const [offsetX, setOffsetX] = useState(DEFAULT_OVERLAY.offsetX);
@@ -90,6 +104,8 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
       if (video) video.srcObject = null;
       setCameraReady(false);
       setCapturedPhoto(null);
+      setFaceGeometry(null);
+      setAutoFitStatus("idle");
     };
   }, [open]);
 
@@ -101,15 +117,19 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
 
   function resetOverlay() {
     setLookId(DEFAULT_OVERLAY.lookId);
-    setScale(DEFAULT_OVERLAY.scale);
-    setOffsetX(DEFAULT_OVERLAY.offsetX);
-    setOffsetY(DEFAULT_OVERLAY.offsetY);
-    setRotation(DEFAULT_OVERLAY.rotation);
+    applyPlacement(DEFAULT_OVERLAY.lookId);
   }
 
   function applyLook(nextLookId: HairLookId) {
-    const preset = LOOK_PRESETS[nextLookId];
     setLookId(nextLookId);
+    applyPlacement(nextLookId);
+  }
+
+  function applyPlacement(nextLookId: HairLookId) {
+    const frame = frameRef.current;
+    const preset = frame && faceGeometry
+      ? getAutoOverlayPlacement(nextLookId, faceGeometry, frame.clientWidth, frame.clientHeight)
+      : LOOK_PRESETS[nextLookId];
     setScale(preset.scale);
     setOffsetX(preset.offsetX);
     setOffsetY(preset.offsetY);
@@ -121,23 +141,34 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
     const canvas = canvasRef.current;
     if (!video || !canvas || !video.videoWidth || !video.videoHeight) return;
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const targetRatio = 3 / 4;
+    const sourceRatio = video.videoWidth / video.videoHeight;
+    const cropWidth = sourceRatio > targetRatio ? video.videoHeight * targetRatio : video.videoWidth;
+    const cropHeight = sourceRatio > targetRatio ? video.videoHeight : video.videoWidth / targetRatio;
+    const cropX = (video.videoWidth - cropWidth) / 2;
+    const cropY = (video.videoHeight - cropHeight) / 2;
+
+    canvas.width = 720;
+    canvas.height = 960;
     const context = canvas.getContext("2d");
     if (!context) return;
 
     // The live preview is mirrored like a selfie; mirror the captured frame too.
     context.translate(canvas.width, 0);
     context.scale(-1, 1);
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    context.drawImage(video, cropX, cropY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
     context.setTransform(1, 0, 0, 1, 0, 0);
 
-    setCapturedPhoto(canvas.toDataURL("image/jpeg", 0.92));
+    const photo = canvas.toDataURL("image/jpeg", 0.92);
+    setCapturedPhoto(photo);
+    void detectFace(photo);
     stopCamera();
   }
 
   async function retakePhoto() {
     setCapturedPhoto(null);
+    setFaceGeometry(null);
+    setAutoFitStatus("idle");
     setCameraError("");
     const video = videoRef.current;
     if (!video) return;
@@ -157,6 +188,47 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
       setCameraReady(true);
     } catch {
       setCameraError("No hemos podido volver a abrir la cámara.");
+    }
+  }
+
+  async function detectFace(photo: string) {
+    setAutoFitStatus("loading");
+
+    try {
+      const image = await loadImage(photo);
+      const { FaceLandmarker, FilesetResolver } = await import("@mediapipe/tasks-vision");
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm"
+      );
+      const landmarker = await FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
+        },
+        runningMode: "IMAGE",
+        numFaces: 1
+      });
+      const result = landmarker.detect(image);
+      landmarker.close();
+      const geometry = buildFaceGeometry(result.faceLandmarks[0] ?? []);
+
+      if (!geometry) {
+        setAutoFitStatus("failed");
+        return;
+      }
+
+      setFaceGeometry(geometry);
+      setAutoFitStatus("ready");
+      requestAnimationFrame(() => {
+        const frame = frameRef.current;
+        if (!frame) return;
+        const placement = getAutoOverlayPlacement(lookId, geometry, frame.clientWidth, frame.clientHeight);
+        setScale(placement.scale);
+        setOffsetX(placement.offsetX);
+        setOffsetY(placement.offsetY);
+        setRotation(placement.rotation);
+      });
+    } catch {
+      setAutoFitStatus("failed");
     }
   }
 
@@ -182,7 +254,7 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
         </header>
 
         <div className="flex min-h-0 flex-col items-center justify-center bg-paper px-4 py-3">
-          <div className="relative aspect-[3/4] h-full min-h-[220px] max-h-[42dvh] w-auto max-w-full overflow-hidden rounded-[18px] bg-ink">
+          <div ref={frameRef} className="relative aspect-[3/4] h-full min-h-[220px] max-h-[42dvh] w-auto max-w-full overflow-hidden rounded-[18px] bg-ink">
             <video
               ref={videoRef}
               playsInline
@@ -238,7 +310,11 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
           </div>
           <p className="mt-2 text-center text-xs font-bold text-ink/65">
             {capturedPhoto
-              ? "Ahora puedes jugar con la foto. No se guarda ni se sube a ningún sitio."
+              ? autoFitStatus === "loading"
+                ? "Estoy detectando tu cara para colocar el look automáticamente..."
+                : autoFitStatus === "ready"
+                  ? "He colocado el look automáticamente. Puedes ajustarlo a mano si quieres."
+                  : "Ahora puedes jugar con la foto. No se guarda ni se sube a ningún sitio."
               : "Hazte una foto para jugar con los looks. No se guarda ni se sube a ningún sitio."}
           </p>
         </div>
@@ -261,6 +337,12 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
             <div className="mt-3 flex items-center gap-2 rounded-[12px] border border-line bg-paper px-3 py-2 text-xs font-bold text-ink/65">
               <CameraOff size={15} className="shrink-0" />
               Haz la foto primero; después podrás ajustar el look sobre la imagen.
+            </div>
+          ) : null}
+
+          {capturedPhoto && autoFitStatus === "failed" ? (
+            <div className="mt-3 rounded-[12px] border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">
+              No he detectado bien la cara. Puedes seguir ajustando el look a mano.
             </div>
           ) : null}
 
