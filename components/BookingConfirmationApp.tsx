@@ -6,6 +6,9 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 const PENDING_BOOKING_KEY = "gentleman_pending_booking";
+const LAST_MANAGE_URL_KEY = "gentleman_last_manage_url";
+const LAST_BOOKING_SUMMARY_KEY = "gentleman_last_booking_summary";
+const DEBUG_CLIENT_PHONE = "647623713";
 
 function SuccessContent() {
   const params = useSearchParams();
@@ -16,6 +19,7 @@ function SuccessContent() {
   const [appointment, setAppointment] = useState<{
     date?: string;
     start_time?: string;
+    clients?: { phone?: string } | null;
     hairdressers?: { name?: string } | null;
     services?: { name?: string } | null;
   } | null>(null);
@@ -42,8 +46,22 @@ function SuccessContent() {
         : await fetch(`/api/public-appointments/${encodeURIComponent(currentAppointmentToken!)}`);
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) return;
-      setManageUrl(payload.manage_url ?? (currentAppointmentToken ? `/reservar/gestionar/${encodeURIComponent(currentAppointmentToken)}` : ""));
-      setAppointment(payload.appointment ?? null);
+      const nextManageUrl = payload.manage_url ?? (currentAppointmentToken ? `/reservar/gestionar/${encodeURIComponent(currentAppointmentToken)}` : "");
+      const nextAppointment = payload.appointment ?? null;
+      setManageUrl(nextManageUrl);
+      setAppointment(nextAppointment);
+
+      if (nextManageUrl) {
+        window.localStorage.setItem(LAST_MANAGE_URL_KEY, nextManageUrl);
+      }
+      if (nextAppointment) {
+        window.localStorage.setItem(LAST_BOOKING_SUMMARY_KEY, JSON.stringify({
+          date: nextAppointment.date,
+          start_time: nextAppointment.start_time,
+          hairdresser_name: nextAppointment.hairdressers?.name,
+          client_phone: nextAppointment.clients?.phone ?? `+34${DEBUG_CLIENT_PHONE}`
+        }));
+      }
     }
 
     loadConfirmation();
@@ -78,8 +96,13 @@ function SuccessContent() {
           </p>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             <Link href={manageUrl} className="rounded-[8px] bg-[#0057ff] px-4 py-3 text-center font-black text-white">
-              Modificar o anular
+              Modificar cita
             </Link>
+            <Link href={manageUrl} className="rounded-[8px] border border-clay/30 bg-clay/10 px-4 py-3 text-center font-black text-clay">
+              Anular cita
+            </Link>
+          </div>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={copyManageLink}
@@ -87,6 +110,16 @@ function SuccessContent() {
             >
               {copied ? "Enlace copiado" : "Copiar enlace"}
             </button>
+            <a
+              href={`https://wa.me/34${DEBUG_CLIENT_PHONE}?text=${encodeURIComponent(
+                `Confirmación de cita Gentleman: ${appointment?.date ?? pending?.date ?? ""} ${appointment?.start_time?.slice(0, 5) ?? pending?.start_time ?? ""}.`
+              )}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-[8px] border border-lime-500 bg-lime-500 px-4 py-3 text-center font-black text-lime-950"
+            >
+              Enviar confirmación a mi WhatsApp
+            </a>
           </div>
         </section>
       ) : null}
