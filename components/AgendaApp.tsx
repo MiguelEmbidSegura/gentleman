@@ -7,6 +7,8 @@ import {
   ChevronRight,
   Clock3,
   Copy,
+  Globe,
+  History,
   LogOut,
   MessageCircle,
   Phone,
@@ -36,7 +38,7 @@ import type {
   Slot
 } from "@/lib/types";
 
-type ViewMode = "hoy" | "agenda" | "semana" | "citas" | "clientes" | "bloqueos" | "servicios" | "ajustes";
+type ViewMode = "hoy" | "agenda" | "semana" | "citas" | "clientes" | "web" | "bloqueos" | "servicios" | "ajustes";
 type PaymentFilter = "all" | "paid" | "pending_payment" | "cancelled" | "expired";
 
 type ClientSearchResult = Client & {
@@ -578,6 +580,130 @@ function SearchView({ paymentFilter, onEdit }: { paymentFilter: PaymentFilter; o
   );
 }
 
+function PublicBookingsView({ onEdit }: { onEdit: (appointment: Appointment) => void }) {
+  const [upcoming, setUpcoming] = useState<Appointment[]>([]);
+  const [history, setHistory] = useState<Appointment[]>([]);
+  const [hairdresserId, setHairdresserId] = useState<HairdresserId | "all">("all");
+  const [status, setStatus] = useState<AppointmentStatus | "all">("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadBookings() {
+      setLoading(true);
+      setError("");
+      const params = new URLSearchParams({
+        hairdresser_id: hairdresserId,
+        status
+      });
+      const response = await fetch(`/api/public-bookings?${params.toString()}`);
+      const payload = await response.json().catch(() => ({}));
+      setLoading(false);
+
+      if (!response.ok) {
+        setError(payload.error ?? "No se pudieron cargar las reservas web.");
+        return;
+      }
+
+      setUpcoming(payload.upcoming ?? []);
+      setHistory(payload.history ?? []);
+    }
+
+    void loadBookings();
+  }, [hairdresserId, status]);
+
+  function BookingCard({ appointment }: { appointment: Appointment }) {
+    return (
+      <button
+        type="button"
+        onClick={() => onEdit(appointment)}
+        className="w-full rounded-[8px] border border-line bg-white p-3 text-left shadow-sm"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-black text-ink">{appointment.clients?.name ?? "Cliente"}</p>
+            <p className="mt-1 text-sm font-semibold text-moss">{appointment.clients?.phone ?? "Sin teléfono"}</p>
+          </div>
+          <StatusBadge status={appointment.status} />
+        </div>
+        <div className="mt-3 grid gap-1 text-sm font-semibold text-ink/70">
+          <p>{formatDateShort(appointment.date)} · {appointment.start_time.slice(0, 5)}</p>
+          <p>{appointment.services?.name ?? "Servicio"} · {appointment.hairdressers?.name ?? "Peluquero"}</p>
+        </div>
+      </button>
+    );
+  }
+
+  return (
+    <section className="mt-5 space-y-4">
+      <div className="rounded-[8px] border border-line bg-white p-3">
+        <p className="font-black text-ink">Reservas hechas por la web</p>
+        <p className="mt-1 text-sm font-semibold text-ink/60">
+          Consulta las próximas citas públicas y el histórico reciente.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <select
+            value={hairdresserId}
+            onChange={(event) => setHairdresserId(event.target.value as HairdresserId | "all")}
+            className="h-11 rounded-[8px] border border-line bg-paper px-3 text-sm font-black"
+          >
+            <option value="all">Todos</option>
+            {HAIRDRESSERS.map((hairdresser) => (
+              <option key={hairdresser.id} value={hairdresser.id}>{hairdresser.name}</option>
+            ))}
+          </select>
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value as AppointmentStatus | "all")}
+            className="h-11 rounded-[8px] border border-line bg-paper px-3 text-sm font-black"
+          >
+            <option value="all">Todos los estados</option>
+            {Object.entries(statusLabels).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {error ? (
+        <div className="rounded-[8px] border border-clay/30 bg-clay/10 p-3 text-sm font-semibold text-clay">
+          {error}
+        </div>
+      ) : null}
+
+      <div className="rounded-[8px] border border-line bg-white p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Globe size={18} className="text-moss" />
+            <h2 className="font-black text-ink">Próximas reservas web</h2>
+          </div>
+          <span className="rounded-[8px] bg-moss/10 px-2 py-1 text-xs font-black text-moss">{upcoming.length}</span>
+        </div>
+        <div className="mt-3 space-y-2">
+          {loading ? <p className="text-sm font-semibold text-ink/55">Cargando...</p> : null}
+          {!loading && !upcoming.length ? <p className="text-sm font-semibold text-ink/55">No hay reservas web futuras.</p> : null}
+          {upcoming.map((appointment) => <BookingCard key={appointment.id} appointment={appointment} />)}
+        </div>
+      </div>
+
+      <div className="rounded-[8px] border border-line bg-white p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <History size={18} className="text-ink/60" />
+            <h2 className="font-black text-ink">Histórico web reciente</h2>
+          </div>
+          <span className="rounded-[8px] bg-paper px-2 py-1 text-xs font-black text-ink/60">{history.length}</span>
+        </div>
+        <div className="mt-3 space-y-2">
+          {loading ? <p className="text-sm font-semibold text-ink/55">Cargando...</p> : null}
+          {!loading && !history.length ? <p className="text-sm font-semibold text-ink/55">Todavía no hay histórico web.</p> : null}
+          {history.map((appointment) => <BookingCard key={appointment.id} appointment={appointment} />)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ServicesView({ services, onReload }: { services: Service[]; onReload: () => Promise<void> }) {
   const [draft, setDraft] = useState({ name: "", duration_minutes: 15, price: "", description: "" });
 
@@ -836,7 +962,7 @@ export function AgendaApp() {
           {[
             ["hoy", "Hoy", CalendarDays],
             ["semana", "Semana", Clock3],
-            ["clientes", "Clientes", Search],
+            ["web", "Web", Globe],
             ["ajustes", "Más", Settings]
           ].map(([id, label, Icon]) => (
             <button key={id as string} onClick={() => setView(id as ViewMode)} className={clsx("flex h-11 items-center justify-center gap-1 rounded-[8px] border text-xs font-black", view === id ? "border-moss bg-moss text-white" : "border-line bg-white text-ink")}>
@@ -850,21 +976,23 @@ export function AgendaApp() {
       <div className="mt-4">
         <DayPicker date={date} onChange={setDate} />
       </div>
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-        {paymentFilters.map((filter) => (
-          <button
-            key={filter.id}
-            type="button"
-            onClick={() => setPaymentFilter(filter.id)}
-            className={clsx(
-              "h-9 shrink-0 rounded-[8px] border px-3 text-xs font-black",
-              paymentFilter === filter.id ? "border-moss bg-moss text-white" : "border-line bg-white text-ink"
-            )}
-          >
-            {filter.label}
-          </button>
-        ))}
-      </div>
+      {view !== "web" && view !== "ajustes" && view !== "bloqueos" && view !== "servicios" ? (
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          {paymentFilters.map((filter) => (
+            <button
+              key={filter.id}
+              type="button"
+              onClick={() => setPaymentFilter(filter.id)}
+              className={clsx(
+                "h-9 shrink-0 rounded-[8px] border px-3 text-xs font-black",
+                paymentFilter === filter.id ? "border-moss bg-moss text-white" : "border-line bg-white text-ink"
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {error ? <div className="mt-3 rounded-[8px] border border-clay/30 bg-clay/10 p-3 text-sm font-semibold text-clay">{error}</div> : null}
 
@@ -876,12 +1004,14 @@ export function AgendaApp() {
       ) : null}
 
       {view === "semana" ? <WeekView date={date} appointments={filteredAppointments} blocks={blocks} onSelectDate={(nextDate) => { setDate(nextDate); setView("hoy"); }} /> : null}
+      {view === "web" ? <PublicBookingsView onEdit={editAppointment} /> : null}
       {view === "clientes" || view === "citas" ? <SearchView paymentFilter={paymentFilter} onEdit={editAppointment} /> : null}
       {view === "bloqueos" ? <BlocksView blocks={blocks} onReload={() => loadData(date)} /> : null}
       {view === "servicios" ? <ServicesView services={services} onReload={loadServices} /> : null}
       {view === "ajustes" ? (
         <section className="mt-5 grid gap-3">
           <button onClick={() => setView("bloqueos")} className="flex h-14 items-center gap-3 rounded-[8px] border border-line bg-white px-4 text-left font-black text-ink"><Shield size={20} /> Bloqueos, festivos y vacaciones</button>
+          <button onClick={() => setView("clientes")} className="flex h-14 items-center gap-3 rounded-[8px] border border-line bg-white px-4 text-left font-black text-ink"><Search size={20} /> Clientes e historial por persona</button>
           <button onClick={() => setView("servicios")} className="flex h-14 items-center gap-3 rounded-[8px] border border-line bg-white px-4 text-left font-black text-ink"><Settings size={20} /> Servicios</button>
           <div className="rounded-[8px] border border-line bg-white p-4 text-sm text-ink/70">
             <p className="font-black text-ink">Ajustes iniciales</p>
