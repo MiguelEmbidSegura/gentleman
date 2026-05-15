@@ -17,7 +17,17 @@ export async function POST(request: NextRequest) {
     .select("id")
     .eq("email", email);
 
-  if (clientsError) return NextResponse.json({ error: clientsError.message }, { status: 500 });
+  if (clientsError) {
+    const missingEmailColumn = clientsError.message.includes("clients.email does not exist");
+    return NextResponse.json(
+      {
+        error: missingEmailColumn
+          ? "La gestión por email todavía no está activada. Inténtalo de nuevo más adelante."
+          : "No se pudo buscar la cita ahora mismo."
+      },
+      { status: 500 }
+    );
+  }
 
   const clientIds = clients?.map((client) => client.id) ?? [];
   let data: Appointment | null = null;
@@ -34,7 +44,7 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: "No se pudo buscar la cita ahora mismo." }, { status: 500 });
     data = appointment as Appointment | null;
   }
 

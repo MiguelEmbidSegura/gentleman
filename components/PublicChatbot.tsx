@@ -1,7 +1,7 @@
 "use client";
 
 import { Bot, Send, X } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 type ChatMessage = {
   role: "assistant" | "user";
@@ -19,6 +19,12 @@ export function PublicChatbot() {
   const [input, setInput] = useState("");
   const [emailMode, setEmailMode] = useState(false);
   const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [loading, messages, open]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -102,6 +108,7 @@ export function PublicChatbot() {
               </div>
             ))}
             {loading ? <p className="text-xs font-bold text-ink/50">Escribiendo...</p> : null}
+            <div ref={bottomRef} />
           </div>
 
           <form onSubmit={submit} className="border-t border-line bg-white p-3">
