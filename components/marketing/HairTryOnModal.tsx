@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, RotateCcw, X } from "lucide-react";
+import { Camera, CameraOff, RefreshCcw, RotateCcw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { HAIR_LOOKS, HairLookId, HairOverlay } from "@/components/marketing/HairOverlay";
 
@@ -31,9 +31,11 @@ const LOOK_PRESETS: Record<HairLookId, Omit<typeof DEFAULT_OVERLAY, "lookId">> =
 
 export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState("");
   const [cameraReady, setCameraReady] = useState(false);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [lookId, setLookId] = useState<HairLookId>(DEFAULT_OVERLAY.lookId);
   const [scale, setScale] = useState(DEFAULT_OVERLAY.scale);
   const [offsetX, setOffsetX] = useState(DEFAULT_OVERLAY.offsetX);
@@ -84,12 +86,18 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
 
     return () => {
       cancelled = true;
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
+      stopCamera();
       if (video) video.srcObject = null;
       setCameraReady(false);
+      setCapturedPhoto(null);
     };
   }, [open]);
+
+  function stopCamera() {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    setCameraReady(false);
+  }
 
   function resetOverlay() {
     setLookId(DEFAULT_OVERLAY.lookId);
@@ -106,6 +114,50 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
     setOffsetX(preset.offsetX);
     setOffsetY(preset.offsetY);
     setRotation(preset.rotation);
+  }
+
+  function takePhoto() {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || !video.videoWidth || !video.videoHeight) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    // The live preview is mirrored like a selfie; mirror the captured frame too.
+    context.translate(canvas.width, 0);
+    context.scale(-1, 1);
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    context.setTransform(1, 0, 0, 1, 0, 0);
+
+    setCapturedPhoto(canvas.toDataURL("image/jpeg", 0.92));
+    stopCamera();
+  }
+
+  async function retakePhoto() {
+    setCapturedPhoto(null);
+    setCameraError("");
+    const video = videoRef.current;
+    if (!video) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          width: { ideal: 720 },
+          height: { ideal: 960 }
+        },
+        audio: false
+      });
+      streamRef.current = stream;
+      video.srcObject = stream;
+      await video.play();
+      setCameraReady(true);
+    } catch {
+      setCameraError("No hemos podido volver a abrir la cámara.");
+    }
   }
 
   if (!open) return null;
@@ -136,10 +188,14 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
               playsInline
               muted
               autoPlay
-              className="h-full w-full object-cover"
+              className={capturedPhoto ? "hidden h-full w-full object-cover" : "h-full w-full object-cover"}
               style={{ transform: "scaleX(-1)" }}
             />
-            {cameraReady ? (
+            {capturedPhoto ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={capturedPhoto} alt="Foto capturada para probar looks" className="h-full w-full object-cover" />
+            ) : null}
+            {capturedPhoto ? (
               <HairOverlay
                 lookId={lookId}
                 scale={scale}
@@ -148,7 +204,7 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
                 rotation={rotation}
               />
             ) : null}
-            {!cameraReady ? (
+            {!cameraReady && !capturedPhoto ? (
               <div className="absolute inset-0 grid place-items-center p-5 text-center text-white">
                 <div>
                   <Camera className="mx-auto mb-3" size={30} />
@@ -157,8 +213,33 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
               </div>
             ) : null}
           </div>
+          <canvas ref={canvasRef} className="hidden" />
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            {!capturedPhoto ? (
+              <button
+                type="button"
+                onClick={takePhoto}
+                disabled={!cameraReady}
+                className="flex h-10 items-center gap-2 rounded-full bg-[#0057ff] px-4 text-sm font-black text-white disabled:cursor-not-allowed disabled:bg-[#0057ff]/45"
+              >
+                <Camera size={16} />
+                Hacer foto
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void retakePhoto()}
+                className="flex h-10 items-center gap-2 rounded-full border border-line bg-white px-4 text-sm font-black text-ink"
+              >
+                <RefreshCcw size={16} />
+                Repetir foto
+              </button>
+            )}
+          </div>
           <p className="mt-2 text-center text-xs font-bold text-ink/65">
-            La cámara no se guarda ni se sube a ningún sitio.
+            {capturedPhoto
+              ? "Ahora puedes jugar con la foto. No se guarda ni se sube a ningún sitio."
+              : "Hazte una foto para jugar con los looks. No se guarda ni se sube a ningún sitio."}
           </p>
         </div>
 
@@ -168,12 +249,20 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
             <button
               type="button"
               onClick={resetOverlay}
-              className="flex h-9 items-center gap-1 rounded-full border border-line bg-paper px-3 text-xs font-black text-[#0057ff]"
+              disabled={!capturedPhoto}
+              className="flex h-9 items-center gap-1 rounded-full border border-line bg-paper px-3 text-xs font-black text-[#0057ff] disabled:cursor-not-allowed disabled:opacity-45"
             >
               <RotateCcw size={14} />
               Reiniciar
             </button>
           </div>
+
+          {!capturedPhoto ? (
+            <div className="mt-3 flex items-center gap-2 rounded-[12px] border border-line bg-paper px-3 py-2 text-xs font-bold text-ink/65">
+              <CameraOff size={15} className="shrink-0" />
+              Haz la foto primero; después podrás ajustar el look sobre la imagen.
+            </div>
+          ) : null}
 
           <div className="mt-3 grid grid-cols-3 gap-2">
             {HAIR_LOOKS.map((look) => (
@@ -181,9 +270,10 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
                 key={look.id}
                 type="button"
                 onClick={() => applyLook(look.id)}
+                disabled={!capturedPhoto}
                 className={lookId === look.id
-                  ? "min-h-11 rounded-[12px] border border-[#0057ff] bg-[#0057ff] px-2 py-2 text-xs font-black text-white"
-                  : "min-h-11 rounded-[12px] border border-line bg-paper px-2 py-2 text-xs font-black text-ink"}
+                  ? "min-h-11 rounded-[12px] border border-[#0057ff] bg-[#0057ff] px-2 py-2 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-45"
+                  : "min-h-11 rounded-[12px] border border-line bg-paper px-2 py-2 text-xs font-black text-ink disabled:cursor-not-allowed disabled:opacity-45"}
               >
                 <span className="block text-base">{look.emoji}</span>
                 {look.label}
@@ -194,19 +284,19 @@ export function HairTryOnModal({ open, onClose }: HairTryOnModalProps) {
           <div className="mt-4 grid gap-3 border-t border-line pt-3 sm:grid-cols-2">
             <label className="text-sm font-black text-ink">
               Tamaño
-              <input className="mt-1 w-full accent-[#0057ff]" type="range" min="0.6" max="1.5" step="0.05" value={scale} onChange={(event) => setScale(Number(event.target.value))} />
+              <input disabled={!capturedPhoto} className="mt-1 w-full accent-[#0057ff] disabled:opacity-45" type="range" min="0.6" max="1.5" step="0.05" value={scale} onChange={(event) => setScale(Number(event.target.value))} />
             </label>
             <label className="text-sm font-black text-ink">
               Rotación
-              <input className="mt-1 w-full accent-[#0057ff]" type="range" min="-45" max="45" step="1" value={rotation} onChange={(event) => setRotation(Number(event.target.value))} />
+              <input disabled={!capturedPhoto} className="mt-1 w-full accent-[#0057ff] disabled:opacity-45" type="range" min="-45" max="45" step="1" value={rotation} onChange={(event) => setRotation(Number(event.target.value))} />
             </label>
             <label className="text-sm font-black text-ink">
               Izquierda / derecha
-              <input className="mt-1 w-full accent-[#0057ff]" type="range" min="-120" max="120" step="1" value={offsetX} onChange={(event) => setOffsetX(Number(event.target.value))} />
+              <input disabled={!capturedPhoto} className="mt-1 w-full accent-[#0057ff] disabled:opacity-45" type="range" min="-120" max="120" step="1" value={offsetX} onChange={(event) => setOffsetX(Number(event.target.value))} />
             </label>
             <label className="text-sm font-black text-ink">
               Arriba / abajo
-              <input className="mt-1 w-full accent-[#0057ff]" type="range" min="-180" max="120" step="1" value={offsetY} onChange={(event) => setOffsetY(Number(event.target.value))} />
+              <input disabled={!capturedPhoto} className="mt-1 w-full accent-[#0057ff] disabled:opacity-45" type="range" min="-180" max="120" step="1" value={offsetY} onChange={(event) => setOffsetY(Number(event.target.value))} />
             </label>
           </div>
         </div>
