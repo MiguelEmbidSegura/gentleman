@@ -5,7 +5,7 @@ import { CalendarDays, Clock3, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { buildWhatsAppUrl, formatDateShort, getTodayKey } from "@/lib/date";
-import { getDayTimelineSlots, isWithinWorkingHours, timeToMinutes } from "@/lib/availability";
+import { getDayTimelineSlots, isWithinWorkingHours } from "@/lib/availability";
 import { HAIRDRESSER_IDS, HAIRDRESSERS, INITIAL_SERVICES } from "@/lib/schedule";
 import type { HairdresserId, ServiceDuration } from "@/lib/types";
 
@@ -17,17 +17,6 @@ type FakeSlot = {
   hairdresser_name: string;
   status: FakeSlotStatus;
 };
-type LocalDayOff = {
-  id: string;
-  date: string;
-  target: HairdresserId | "both";
-  title: string;
-  allDay?: boolean;
-  startTime?: string | null;
-  endTime?: string | null;
-};
-
-const DAYS_OFF_STORAGE_KEY = "gentleman_days_off";
 const PENDING_BOOKING_KEY = "gentleman_pending_booking";
 const LAST_MANAGE_URL_KEY = "gentleman_last_manage_url";
 const LAST_BOOKING_SUMMARY_KEY = "gentleman_last_booking_summary";
@@ -40,49 +29,27 @@ const hairdresserPhones: Record<HairdresserId, string> = {
   [HAIRDRESSER_IDS.ruben]: process.env.NEXT_PUBLIC_RUBEN_PHONE ?? DEFAULT_CONTACT_PHONE
 };
 
-function stableNumber(value: string) {
-  return Array.from(value).reduce((total, char) => total + char.charCodeAt(0), 0);
-}
-
-function buildFakeSlots(
+function buildDisplaySlots(
   date: string,
   hairdresserId: HairdresserChoice,
   duration: ServiceDuration,
-  daysOff: LocalDayOff[]
+  availableSlots: Array<{ time: string; hairdresser_id: HairdresserId; hairdresser_name: string }>
 ): FakeSlot[] {
   const hairdressers = hairdresserId === "any"
     ? HAIRDRESSERS
     : HAIRDRESSERS.filter((hairdresser) => hairdresser.id === hairdresserId);
   const day = new Date(`${date}T00:00:00`).getDay();
   const timeline = getDayTimelineSlots(date);
+  const availableKeys = new Set(availableSlots.map((slot) => `${slot.hairdresser_id}-${slot.time}`));
 
-  return hairdressers.flatMap((hairdresser) => {
-    const awayWholeDay = day !== 0 && stableNumber(`${date}-${hairdresser.id}`) % 9 === 0;
-
-    return timeline.map((time) => {
-      let status: FakeSlotStatus = "closed";
-      const adminBlock = daysOff.some((item) => {
-        const affectsHairdresser = item.target === "both" || item.target === hairdresser.id;
-        if (!affectsHairdresser || item.date !== date) return false;
-        if (item.allDay ?? true) return true;
-        if (!item.startTime || !item.endTime) return true;
-
-        const slotMinute = timeToMinutes(time);
-        return slotMinute >= timeToMinutes(item.startTime) && slotMinute < timeToMinutes(item.endTime);
-      });
-
-      if (day === 0) {
-        status = "closed";
-      } else if (adminBlock) {
-        status = "away";
-      } else if (awayWholeDay) {
-        status = "away";
-      } else if (!isWithinWorkingHours(hairdresser.id, date, time, duration)) {
-        status = "away";
-      } else {
-        const marker = stableNumber(`${date}-${hairdresser.id}-${time}`) % 10;
-        status = marker < 5 ? "free" : marker < 8 ? "occupied" : "away";
-      }
+  return hairdressers.flatMap((hairdresser) =>
+    timeline.map((time) => {
+      const insideWorkingHours = day !== 0 && isWithinWorkingHours(hairdresser.id, date, time, duration);
+      const status: FakeSlotStatus = !insideWorkingHours
+        ? "closed"
+        : availableKeys.has(`${hairdresser.id}-${time}`)
+          ? "free"
+          : "occupied";
 
       return {
         time,
@@ -90,8 +57,8 @@ function buildFakeSlots(
         hairdresser_name: hairdresser.name,
         status
       };
-    });
-  });
+    })
+  );
 }
 
 export function PublicBookingApp() {
@@ -108,12 +75,13 @@ export function PublicBookingApp() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [daysOff, setDaysOff] = useState<LocalDayOff[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<Array<{ time: string; hairdresser_id: HairdresserId; hairdresser_name: string }>>([]);
+  const [availabilityLoading, setAvailabilityLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const slots = useMemo(
-    () => buildFakeSlots(date, hairdresserId, SELECTED_SERVICE.duration_minutes, daysOff),
-    [date, daysOff, hairdresserId]
+    () => buildDisplaySlots(date, hairdresserId, SELECTED_SERVICE.duration_minutes, availableSlots),
+    [availableSlots, date, hairdresserId]
   );
 
   const visibleHairdressers = hairdresserId === "any"
@@ -121,9 +89,25 @@ export function PublicBookingApp() {
     : HAIRDRESSERS.filter((hairdresser) => hairdresser.id === hairdresserId);
 
   useEffect(() => {
-    const savedDaysOff = window.localStorage.getItem(DAYS_OFF_STORAGE_KEY);
-    if (savedDaysOff) setDaysOff(JSON.parse(savedDaysOff));
-  }, []);
+    async function loadAvailability() {
+      setAvailabilityLoading(true);
+      const params = new URLSearchParams({
+        date,
+        duration: String(SELECTED_SERVICE.duration_minutes),
+        hairdresser_id: hairdresserId
+      });
+      const response = await fetch(`/api/availability?${params.toString()}`);
+      const payload = await response.json().catch(() => ({}));
+      setAvailabilityLoading(false);
+      if (!response.ok) {
+        setError(payload.error ?? "No se pudieron cargar los huecos disponibles.");
+        return;
+      }
+      setAvailableSlots(payload.slots ?? []);
+    }
+
+    void loadAvailability();
+  }, [date, hairdresserId]);
 
   useEffect(() => {
     setSelectedSlot(null);
@@ -373,7 +357,9 @@ export function PublicBookingApp() {
                 <div key={hairdresser.id} className="rounded-[8px] border border-line bg-paper/60 p-2">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <h3 className="text-base font-black text-ink">{hairdresser.name}</h3>
-                    <span className="rounded-[8px] bg-lime-200 px-2 py-1 text-xs font-black text-lime-950">{freeCount} libres</span>
+                    <span className="rounded-[8px] bg-lime-200 px-2 py-1 text-xs font-black text-lime-950">
+                      {availabilityLoading ? "..." : `${freeCount} libres`}
+                    </span>
                   </div>
                   <div className="grid grid-cols-5 gap-1 sm:grid-cols-6 lg:grid-cols-5 xl:grid-cols-6">
                     {hairdresserSlots.map((slot) => {

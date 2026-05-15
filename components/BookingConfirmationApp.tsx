@@ -98,7 +98,7 @@ function SuccessContent() {
       ) : null}
       {isDebugPayment && emailStatus === "sent" ? (
         <p className="mt-3 rounded-[8px] border border-lime-300 bg-lime-50 px-3 py-2 text-sm font-bold text-lime-900">
-          La confirmación se ha enviado por email.
+          Te hemos enviado un correo con la confirmación, un recordatorio de la cita y los enlaces para modificarla o anularla.
         </p>
       ) : null}
       {isDebugPayment && emailStatus === "provider_error" ? (
