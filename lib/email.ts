@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import type { Appointment } from "@/lib/types";
 
 type SendAppointmentEmailParams = {
@@ -46,10 +46,17 @@ export async function sendAppointmentEmail({
   kind = "confirmed",
   simulated = false
 }: SendAppointmentEmailParams): Promise<EmailSendResult> {
-  const apiKey = process.env.RESEND_API_KEY;
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "");
   const from = process.env.BOOKING_EMAIL_FROM;
-  if (!apiKey || !from) return { sent: false, reason: "not_configured" };
-  const resend = new Resend(apiKey);
+  if (!gmailUser || !gmailAppPassword || !from) return { sent: false, reason: "not_configured" };
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: gmailUser,
+      pass: gmailAppPassword
+    }
+  });
 
   const fullManageUrl = absoluteUrl(siteUrl, manageUrl);
   const fullCalendarUrl = absoluteUrl(siteUrl, calendarUrl);
@@ -57,9 +64,9 @@ export async function sendAppointmentEmail({
   const hairdresserName = appointment.hairdressers?.name ?? "Gentleman";
   const startTime = appointment.start_time.slice(0, 5);
 
-  const { error } = await resend.emails.send({
+  const result = await transporter.sendMail({
     from,
-    to: [to],
+    to,
     subject: subjectFor(kind, appointment, simulated),
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
@@ -87,8 +94,8 @@ export async function sendAppointmentEmail({
       `Modificar o anular cita: ${fullManageUrl}`,
       `Añadir al calendario: ${fullCalendarUrl}`
     ].filter(Boolean).join("\n")
-  }).catch(() => ({ error: true }));
+  }).catch(() => null);
 
-  if (error) return { sent: false, reason: "provider_error" };
+  if (!result) return { sent: false, reason: "provider_error" };
   return { sent: true };
 }

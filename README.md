@@ -69,11 +69,12 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 NEXT_PUBLIC_SITE_URL=
-RESEND_API_KEY=
+GMAIL_USER=
+GMAIL_APP_PASSWORD=
 BOOKING_EMAIL_FROM=
 ```
 
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` pueden usarse en cliente. `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` y `RESEND_API_KEY` son solo de servidor y nunca deben exponerse en navegador. `.env.local` no debe subirse a GitHub.
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` pueden usarse en cliente. `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` y `GMAIL_APP_PASSWORD` son solo de servidor y nunca deben exponerse en navegador. `.env.local` no debe subirse a GitHub.
 
 Para local, `NEXT_PUBLIC_SITE_URL=http://localhost:3000`. Para Alberto y Ruben puedes usar `+34655874680` en los telefonos.
 
@@ -116,7 +117,7 @@ Copia el signing secret del webhook en `STRIPE_WEBHOOK_SECRET`. Prueba con tarje
 
 ## Configurar confirmaciones por email
 
-La reserva publica pide un email y, cuando `RESEND_API_KEY` y `BOOKING_EMAIL_FROM` estan configurados, envia automaticamente una confirmacion con:
+La reserva publica pide un email y, cuando `GMAIL_USER`, `GMAIL_APP_PASSWORD` y `BOOKING_EMAIL_FROM` estan configurados, envia automaticamente una confirmacion con:
 
 - fecha y hora de la cita;
 - enlace privado para modificar o anular;
@@ -125,11 +126,12 @@ La reserva publica pide un email y, cuando `RESEND_API_KEY` y `BOOKING_EMAIL_FRO
 Variables necesarias:
 
 ```env
-RESEND_API_KEY=
-BOOKING_EMAIL_FROM=Gentleman <citas@tu-dominio.com>
+GMAIL_USER=miguel.embid@gmail.com
+GMAIL_APP_PASSWORD=
+BOOKING_EMAIL_FROM=Gentleman <miguel.embid@gmail.com>
 ```
 
-Si todavia no configuras Resend, la reserva sigue funcionando y la interfaz indica que el email esta pendiente de configurar.
+Si todavia no configuras Gmail, la reserva sigue funcionando y la interfaz indica que el email esta pendiente de configurar.
 
 ## Configurar Supabase
 
@@ -215,7 +217,8 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 NEXT_PUBLIC_SITE_URL=
-RESEND_API_KEY=
+GMAIL_USER=
+GMAIL_APP_PASSWORD=
 BOOKING_EMAIL_FROM=
 ```
 
