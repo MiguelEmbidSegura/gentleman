@@ -5,16 +5,16 @@ type ChatbotReply = {
 
 const faqReplies: Array<{ patterns: RegExp[]; answer: string }> = [
   {
+    patterns: [/modific/i, /cambi/i, /anul/i, /cancel/i],
+    answer: "Puedo ayudarte a gestionar tu cita. Escríbeme el email con el que la reservaste y te enviaré un enlace seguro para modificarla o anularla.",
+  },
+  {
     patterns: [/horario/i, /abr(?:e|en)/i],
     answer: "Puedes elegir los huecos disponibles directamente en el calendario de reservas. La web solo muestra horarios que siguen libres en ese momento."
   },
   {
     patterns: [/reserv(?:a|ar|o)/i, /cita/i],
     answer: "Para reservar, elige peluquero, fecha y hora, completa tus datos y confirma la reserva."
-  },
-  {
-    patterns: [/modific/i, /cambi/i, /anul/i, /cancel/i],
-    answer: "Puedo ayudarte a gestionar tu cita. Escríbeme el email con el que la reservaste y te enviaré un enlace seguro para modificarla o anularla.",
   },
   {
     patterns: [/correo/i, /email/i, /mensaje/i],
