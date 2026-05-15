@@ -111,12 +111,6 @@ export function PublicBookingApp() {
   const [daysOff, setDaysOff] = useState<LocalDayOff[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lastManageUrl, setLastManageUrl] = useState("");
-  const [lastBookingSummary, setLastBookingSummary] = useState<{
-    date?: string;
-    start_time?: string;
-    hairdresser_name?: string;
-    client_phone?: string;
-  } | null>(null);
 
   const slots = useMemo(
     () => buildFakeSlots(date, hairdresserId, SELECTED_SERVICE.duration_minutes, daysOff),
@@ -132,15 +126,7 @@ export function PublicBookingApp() {
     if (savedDaysOff) setDaysOff(JSON.parse(savedDaysOff));
 
     const savedManageUrl = window.localStorage.getItem(LAST_MANAGE_URL_KEY);
-    const savedSummary = window.localStorage.getItem(LAST_BOOKING_SUMMARY_KEY);
     if (savedManageUrl) setLastManageUrl(savedManageUrl);
-    if (savedSummary) {
-      try {
-        setLastBookingSummary(JSON.parse(savedSummary));
-      } catch {
-        window.localStorage.removeItem(LAST_BOOKING_SUMMARY_KEY);
-      }
-    }
   }, []);
 
   useEffect(() => {
@@ -216,7 +202,6 @@ export function PublicBookingApp() {
 
       setDone(true);
       setLastManageUrl(payload.manage_url);
-      setLastBookingSummary(bookingSummary);
       window.localStorage.setItem(LAST_MANAGE_URL_KEY, payload.manage_url);
       window.localStorage.setItem(LAST_BOOKING_SUMMARY_KEY, JSON.stringify(bookingSummary));
       setLoading(false);
@@ -257,62 +242,6 @@ export function PublicBookingApp() {
           </div>
         </div>
       </header>
-
-      <section className="mt-3 rounded-[8px] border border-[#0057ff]/20 bg-[#0057ff]/5 p-3 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0057ff]">¿Ya tienes cita?</p>
-            <h2 className="mt-1 text-lg font-black text-ink">Modificar o anular cita</h2>
-            <p className="mt-1 text-sm font-semibold text-ink/65">
-              En esta simulación usamos tu móvil {DEBUG_CLIENT_PHONE}. Tras reservar, aquí quedará visible el acceso a tu última cita.
-            </p>
-          </div>
-          {lastManageUrl ? (
-            <div className="grid min-w-[220px] gap-2 sm:grid-cols-2">
-              <a
-                href={lastManageUrl}
-                className="flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#0057ff] px-3 text-sm font-black text-white"
-              >
-                <Pencil size={16} />
-                Modificar cita
-              </a>
-              <a
-                href={lastManageUrl}
-                className="flex h-11 items-center justify-center gap-2 rounded-[8px] border border-clay/30 bg-clay/10 px-3 text-sm font-black text-clay"
-              >
-                <Trash2 size={16} />
-                Anular cita
-              </a>
-            </div>
-          ) : (
-            <div className="grid min-w-[220px] gap-2 sm:grid-cols-2">
-              <span className="flex h-11 items-center justify-center gap-2 rounded-[8px] bg-[#0057ff]/35 px-3 text-sm font-black text-white">
-                <Pencil size={16} />
-                Modificar cita
-              </span>
-              <span className="flex h-11 items-center justify-center gap-2 rounded-[8px] border border-clay/20 bg-clay/5 px-3 text-sm font-black text-clay/45">
-                <Trash2 size={16} />
-                Anular cita
-              </span>
-            </div>
-          )}
-        </div>
-
-        {lastBookingSummary ? (
-          <div className="mt-3 rounded-[8px] border border-line bg-white p-3 text-sm font-semibold text-ink/70">
-            Última cita guardada en este navegador:
-            {" "}
-            {lastBookingSummary.date ?? "fecha pendiente"}
-            {lastBookingSummary.start_time ? ` a las ${lastBookingSummary.start_time.slice(0, 5)}` : ""}
-            {lastBookingSummary.hairdresser_name ? ` con ${lastBookingSummary.hairdresser_name}` : ""}
-            {lastBookingSummary.client_phone ? ` · móvil ${lastBookingSummary.client_phone}` : ""}
-          </div>
-        ) : (
-          <p className="mt-3 text-sm font-semibold text-ink/55">
-            Aún no hay una reserva reciente en este navegador. Haz una prueba y los botones aparecerán aquí.
-          </p>
-        )}
-      </section>
 
       {done && selectedSlot ? (
         <section className="mt-3 rounded-[8px] border border-lime-300 bg-lime-100 p-4 shadow-soft">
