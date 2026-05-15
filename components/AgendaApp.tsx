@@ -583,6 +583,8 @@ function SearchView({ paymentFilter, onEdit }: { paymentFilter: PaymentFilter; o
 function PublicBookingsView({ onEdit }: { onEdit: (appointment: Appointment) => void }) {
   const [upcoming, setUpcoming] = useState<Appointment[]>([]);
   const [history, setHistory] = useState<Appointment[]>([]);
+  const [query, setQuery] = useState("");
+  const [newSinceYesterday, setNewSinceYesterday] = useState(0);
   const [hairdresserId, setHairdresserId] = useState<HairdresserId | "all">("all");
   const [status, setStatus] = useState<AppointmentStatus | "all">("all");
   const [loading, setLoading] = useState(true);
@@ -594,7 +596,8 @@ function PublicBookingsView({ onEdit }: { onEdit: (appointment: Appointment) => 
       setError("");
       const params = new URLSearchParams({
         hairdresser_id: hairdresserId,
-        status
+        status,
+        q: query.trim()
       });
       const response = await fetch(`/api/public-bookings?${params.toString()}`);
       const payload = await response.json().catch(() => ({}));
@@ -607,10 +610,15 @@ function PublicBookingsView({ onEdit }: { onEdit: (appointment: Appointment) => 
 
       setUpcoming(payload.upcoming ?? []);
       setHistory(payload.history ?? []);
+      setNewSinceYesterday(payload.new_since_yesterday ?? 0);
     }
 
-    void loadBookings();
-  }, [hairdresserId, status]);
+    const handle = window.setTimeout(() => {
+      void loadBookings();
+    }, 250);
+
+    return () => window.clearTimeout(handle);
+  }, [hairdresserId, query, status]);
 
   function BookingCard({ appointment }: { appointment: Appointment }) {
     return (
@@ -637,10 +645,26 @@ function PublicBookingsView({ onEdit }: { onEdit: (appointment: Appointment) => 
   return (
     <section className="mt-5 space-y-4">
       <div className="rounded-[8px] border border-line bg-white p-3">
-        <p className="font-black text-ink">Reservas hechas por la web</p>
-        <p className="mt-1 text-sm font-semibold text-ink/60">
-          Consulta las próximas citas públicas y el histórico reciente.
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="font-black text-ink">Reservas hechas por la web</p>
+            <p className="mt-1 text-sm font-semibold text-ink/60">
+              Consulta las próximas citas públicas y el histórico reciente.
+            </p>
+          </div>
+          <span className="rounded-[8px] bg-[#0057ff]/10 px-2 py-1 text-xs font-black text-[#0057ff]">
+            {newSinceYesterday} nuevas desde ayer
+          </span>
+        </div>
+        <div className="relative mt-3">
+          <Search className="absolute left-3 top-3 text-ink/45" size={18} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar nombre o teléfono"
+            className="h-11 w-full rounded-[8px] border border-line bg-paper pl-10 pr-3 text-sm font-semibold outline-none focus:border-moss"
+          />
+        </div>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <select
             value={hairdresserId}

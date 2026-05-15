@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/auth";
-import { getTodayKey } from "@/lib/date";
+import { addDays, getTodayKey } from "@/lib/date";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: NextRequest) {
@@ -9,7 +9,9 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const hairdresserId = searchParams.get("hairdresser_id");
   const status = searchParams.get("status");
+  const q = searchParams.get("q")?.trim();
   const today = getTodayKey();
+  const yesterday = addDays(today, -1);
   const supabase = getSupabaseAdmin();
 
   const applyFilters = <T extends {
@@ -21,7 +23,24 @@ export async function GET(request: NextRequest) {
     return next;
   };
 
-  const upcomingQuery = applyFilters(
+  const appointmentIdsForSearch = q
+    ? await supabase
+      .from("clients")
+      .select("id")
+      .or(`name.ilike.%${q}%,phone.ilike.%${q}%`)
+    : null;
+
+  if (appointmentIdsForSearch?.error) {
+    return NextResponse.json({ error: appointmentIdsForSearch.error.message }, { status: 500 });
+  }
+
+  const matchingClientIds = appointmentIdsForSearch?.data?.map((client) => client.id) ?? [];
+
+  const applyClientSearch = <T extends {
+    in: (column: string, values: string[]) => T;
+  }>(query: T) => q ? query.in("client_id", matchingClientIds) : query;
+
+  const upcomingQuery = applyClientSearch(applyFilters(
     supabase
       .from("appointments")
       .select("*, clients(*), services(*), hairdressers(*)")
@@ -29,9 +48,9 @@ export async function GET(request: NextRequest) {
       .order("date", { ascending: true })
       .order("start_time", { ascending: true })
       .limit(100)
-  );
+  ));
 
-  const historyQuery = applyFilters(
+  const historyQuery = applyClientSearch(applyFilters(
     supabase
       .from("appointments")
       .select("*, clients(*), services(*), hairdressers(*)")
@@ -39,18 +58,34 @@ export async function GET(request: NextRequest) {
       .order("date", { ascending: false })
       .order("start_time", { ascending: false })
       .limit(100)
-  );
+  ));
 
-  const [{ data: upcoming, error: upcomingError }, { data: history, error: historyError }] = await Promise.all([
+  let recentQuery = supabase
+    .from("appointments")
+    .select("id", { count: "exact", head: true })
+    .eq("source", "public")
+    .gte("created_at", `${yesterday}T00:00:00.000Z`);
+
+  if (hairdresserId && hairdresserId !== "all") recentQuery = recentQuery.eq("hairdresser_id", hairdresserId);
+  if (status && status !== "all") recentQuery = recentQuery.eq("status", status);
+  if (q) recentQuery = recentQuery.in("client_id", matchingClientIds);
+
+  const [
+    { data: upcoming, error: upcomingError },
+    { data: history, error: historyError },
+    { count: newSinceYesterday, error: recentError }
+  ] = await Promise.all([
     upcomingQuery,
-    historyQuery
+    historyQuery,
+    recentQuery
   ]);
 
-  const error = upcomingError ?? historyError;
+  const error = upcomingError ?? historyError ?? recentError;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({
     upcoming: upcoming ?? [],
-    history: history ?? []
+    history: history ?? [],
+    new_since_yesterday: newSinceYesterday ?? 0
   });
 }
