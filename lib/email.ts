@@ -1,3 +1,4 @@
+import { Resend } from "resend";
 import type { Appointment } from "@/lib/types";
 
 type SendAppointmentEmailParams = {
@@ -40,6 +41,7 @@ export async function sendAppointmentEmail({
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.BOOKING_EMAIL_FROM;
   if (!apiKey || !from) return { sent: false, reason: "not_configured" };
+  const resend = new Resend(apiKey);
 
   const fullManageUrl = absoluteUrl(siteUrl, manageUrl);
   const fullCalendarUrl = absoluteUrl(siteUrl, calendarUrl);
@@ -47,43 +49,36 @@ export async function sendAppointmentEmail({
   const hairdresserName = appointment.hairdressers?.name ?? "Gentleman";
   const startTime = appointment.start_time.slice(0, 5);
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject: subjectFor(kind),
-      html: `
-        <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
-          <h1 style="margin-bottom:8px">${statusText(kind)}</h1>
-          <p><strong>${serviceName}</strong></p>
-          <p>${appointment.date} a las ${startTime} con ${hairdresserName}</p>
-          <p style="margin-top:24px">
-            <a href="${fullManageUrl}" style="display:inline-block;background:#0057ff;color:white;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:bold">
-              Modificar o anular cita
-            </a>
-          </p>
-          <p>
-            <a href="${fullCalendarUrl}">Añadir al calendario</a>
-          </p>
-          <p style="margin-top:24px;color:#6b7280;font-size:14px">
-            Guarda este email: desde aquí podrás volver a tu cita cuando lo necesites.
-          </p>
-        </div>
-      `,
-      text: [
-        statusText(kind),
-        `${serviceName}: ${appointment.date} a las ${startTime} con ${hairdresserName}`,
-        `Modificar o anular cita: ${fullManageUrl}`,
-        `Añadir al calendario: ${fullCalendarUrl}`
-      ].join("\n")
-    })
-  }).catch(() => null);
+  const { error } = await resend.emails.send({
+    from,
+    to: [to],
+    subject: subjectFor(kind),
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+        <h1 style="margin-bottom:8px">${statusText(kind)}</h1>
+        <p><strong>${serviceName}</strong></p>
+        <p>${appointment.date} a las ${startTime} con ${hairdresserName}</p>
+        <p style="margin-top:24px">
+          <a href="${fullManageUrl}" style="display:inline-block;background:#0057ff;color:white;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:bold">
+            Modificar o anular cita
+          </a>
+        </p>
+        <p>
+          <a href="${fullCalendarUrl}">Añadir al calendario</a>
+        </p>
+        <p style="margin-top:24px;color:#6b7280;font-size:14px">
+          Guarda este email: desde aquí podrás volver a tu cita cuando lo necesites.
+        </p>
+      </div>
+    `,
+    text: [
+      statusText(kind),
+      `${serviceName}: ${appointment.date} a las ${startTime} con ${hairdresserName}`,
+      `Modificar o anular cita: ${fullManageUrl}`,
+      `Añadir al calendario: ${fullCalendarUrl}`
+    ].join("\n")
+  }).catch(() => ({ error: true }));
 
-  if (!response?.ok) return { sent: false, reason: "provider_error" };
+  if (error) return { sent: false, reason: "provider_error" };
   return { sent: true };
 }
