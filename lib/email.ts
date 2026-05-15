@@ -8,6 +8,7 @@ type SendAppointmentEmailParams = {
   calendarUrl: string;
   siteUrl: string;
   kind?: "confirmed" | "updated" | "cancelled";
+  simulated?: boolean;
 };
 
 export type EmailSendResult =
@@ -18,10 +19,16 @@ function absoluteUrl(siteUrl: string, path: string): string {
   return `${siteUrl.replace(/\/$/, "")}${path}`;
 }
 
-function subjectFor(kind: NonNullable<SendAppointmentEmailParams["kind"]>): string {
-  if (kind === "updated") return "Tu cita en Gentleman se ha modificado";
-  if (kind === "cancelled") return "Tu cita en Gentleman se ha anulado";
-  return "Confirmación de tu cita en Gentleman";
+function subjectFor(
+  kind: NonNullable<SendAppointmentEmailParams["kind"]>,
+  appointment: Appointment,
+  simulated: boolean
+): string {
+  const prefix = simulated ? "[PRUEBA] " : "";
+  const when = `${appointment.date} ${appointment.start_time.slice(0, 5)}`;
+  if (kind === "updated") return `${prefix}Tu cita en Gentleman se ha modificado · ${when}`;
+  if (kind === "cancelled") return `${prefix}Tu cita en Gentleman se ha anulado · ${when}`;
+  return `${prefix}Confirmación de tu cita en Gentleman · ${when}`;
 }
 
 function statusText(kind: NonNullable<SendAppointmentEmailParams["kind"]>): string {
@@ -36,7 +43,8 @@ export async function sendAppointmentEmail({
   manageUrl,
   calendarUrl,
   siteUrl,
-  kind = "confirmed"
+  kind = "confirmed",
+  simulated = false
 }: SendAppointmentEmailParams): Promise<EmailSendResult> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.BOOKING_EMAIL_FROM;
@@ -52,9 +60,10 @@ export async function sendAppointmentEmail({
   const { error } = await resend.emails.send({
     from,
     to: [to],
-    subject: subjectFor(kind),
+    subject: subjectFor(kind, appointment, simulated),
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+        ${simulated ? '<p style="margin-bottom:16px;color:#92400e;font-weight:bold">Correo de prueba</p>' : ""}
         <h1 style="margin-bottom:8px">${statusText(kind)}</h1>
         <p><strong>${serviceName}</strong></p>
         <p>${appointment.date} a las ${startTime} con ${hairdresserName}</p>
@@ -72,11 +81,12 @@ export async function sendAppointmentEmail({
       </div>
     `,
     text: [
+      simulated ? "Correo de prueba" : "",
       statusText(kind),
       `${serviceName}: ${appointment.date} a las ${startTime} con ${hairdresserName}`,
       `Modificar o anular cita: ${fullManageUrl}`,
       `Añadir al calendario: ${fullCalendarUrl}`
-    ].join("\n")
+    ].filter(Boolean).join("\n")
   }).catch(() => ({ error: true }));
 
   if (error) return { sent: false, reason: "provider_error" };
