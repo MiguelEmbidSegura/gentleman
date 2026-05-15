@@ -78,7 +78,7 @@ export function PublicChatbot() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="fixed bottom-5 right-5 z-40 flex h-14 items-center gap-2 rounded-full bg-ink px-4 font-black text-white shadow-soft"
+        className="fixed bottom-5 right-5 z-40 flex h-14 items-center gap-2 rounded-full bg-[#b58a63] px-4 font-black text-white shadow-soft"
       >
         <Bot size={20} />
         Ayuda

@@ -12,7 +12,7 @@ export function HairTryOnWidget() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-5 z-40 flex h-14 items-center gap-2 rounded-full bg-[#0057ff] px-4 font-black text-white shadow-soft"
+        className="fixed bottom-24 right-5 z-40 flex h-14 items-center gap-2 rounded-full bg-[#f97316] px-4 font-black text-white shadow-soft"
       >
         <Sparkles size={20} />
         Prueba tu look
