@@ -92,6 +92,9 @@ function buildFakeSlots(
 }
 
 export function PublicBookingApp() {
+  const isDebugPaymentMode =
+    process.env.NEXT_PUBLIC_DEBUG_BYPASS_STRIPE?.trim() === "true" ||
+    !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
   const [hairdresserId, setHairdresserId] = useState<HairdresserChoice>("any");
   const [date, setDate] = useState(getTodayKey());
   const [selectedSlot, setSelectedSlot] = useState<FakeSlot | null>(null);
@@ -411,7 +414,7 @@ export function PublicBookingApp() {
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-[#0057ff]">Confirmar</p>
                 <h2 className="mt-1 text-2xl font-black text-ink">
-                  {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? "Pagar reserva" : "Confirmar reserva"}
+                  {isDebugPaymentMode ? "Confirmar reserva" : "Pagar reserva"}
                 </h2>
               </div>
               <button type="button" onClick={() => setConfirmOpen(false)} className="grid h-9 w-9 place-items-center rounded-[8px] border border-line bg-paper" aria-label="Cerrar">
@@ -423,9 +426,9 @@ export function PublicBookingApp() {
               <p className="mt-1 text-xl font-black text-ink">{selectedSlot.time}</p>
               <p className="mt-1">Con {selectedSlot.hairdresser_name}</p>
               <p className="mt-3 rounded-[8px] bg-white p-2 text-[#0057ff]">
-                {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-                  ? "Pago previo obligatorio: 8 €"
-                  : "Modo depuración: se simulará el pago de 8 €."}
+                {isDebugPaymentMode
+                  ? "Modo depuración: se simulará el pago de 8 €."
+                  : "Pago previo obligatorio: 8 €"}
               </p>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
@@ -433,7 +436,7 @@ export function PublicBookingApp() {
                 Cancelar
               </button>
               <button type="button" onClick={confirmBooking} className="h-11 rounded-[8px] bg-[#0057ff] font-black text-white">
-                {process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? "Ir a pagar" : "Confirmar"}
+                {isDebugPaymentMode ? "Confirmar" : "Ir a pagar"}
               </button>
             </div>
           </section>

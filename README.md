@@ -81,6 +81,13 @@ Stripe Checkout cobra un pago previo obligatorio de 8,00 EUR antes de confirmar 
 
 Mientras Stripe no este configurado, la app entra en modo depuracion: al confirmar una reserva publica simula el pago de 8,00 EUR, crea la cita como confirmada y permite recorrer el flujo completo de modificacion/anulacion.
 
+Si necesitas forzar ese comportamiento aunque existan claves de Stripe, define:
+
+```env
+NEXT_PUBLIC_DEBUG_BYPASS_STRIPE=true
+DEBUG_BYPASS_STRIPE=true
+```
+
 1. Crea una cuenta en Stripe.
 2. Entra en Developers > API keys.
 3. Copia la publishable key.

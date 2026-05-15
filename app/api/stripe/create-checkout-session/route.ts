@@ -123,9 +123,14 @@ export async function POST(request: NextRequest) {
   const availability = canCreateAppointment(appointmentInput, appointments ?? [], blocks ?? [], { disallowPast: true });
   if (!availability.ok) return NextResponse.json({ error: availability.reason }, { status: 400 });
 
+  let pendingAppointmentId: string | null = null;
+
   try {
     const client = await findOrCreateClient(body);
-    const shouldSimulatePayment = !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || !process.env.STRIPE_SECRET_KEY;
+    const shouldSimulatePayment =
+      process.env.DEBUG_BYPASS_STRIPE?.trim() === "true" ||
+      !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+      !process.env.STRIPE_SECRET_KEY;
 
     if (shouldSimulatePayment) {
       const { data: appointment, error: appointmentError } = await supabase
@@ -181,6 +186,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (appointmentError) throw appointmentError;
+    pendingAppointmentId = appointment.id;
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || request.headers.get("origin") || new URL(request.url).origin;
     const stripe = getStripe();
@@ -220,6 +226,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: session.url, appointment_id: appointment.id });
   } catch (error) {
+    if (pendingAppointmentId) {
+      await supabase
+        .from("appointments")
+        .update({ status: "expired", payment_status: "failed" })
+        .eq("id", pendingAppointmentId);
+    }
+
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "No se pudo iniciar el pago." },
       { status: 500 }
